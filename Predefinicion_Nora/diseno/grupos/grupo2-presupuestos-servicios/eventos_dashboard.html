@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MitumiOS · Eventos en curso</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#16132E; --ink-soft:#221E44;
+    --indigo:#5B3DF5; --indigo-2:#7C5CFF;
+    --coral:#FF6A4D; --mint:#10C9A6; --amber:#FFB020;
+    --paper:#F5F4FA; --card:#FFFFFF;
+    --muted:#6C6890; --line:#E6E4F2; --tint:#F0EDFF;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Inter',system-ui,sans-serif;background:var(--paper);color:var(--ink);-webkit-font-smoothing:antialiased}
+  h1,h2,h3,.disp{font-family:'Space Grotesk',sans-serif;letter-spacing:-0.02em}
+  .mono{font-family:'Space Mono',monospace}
+  .wrap{max-width:1080px;margin:0 auto;padding:0 24px}
+
+  /* topbar */
+  .top{background:var(--ink);color:#fff;padding:16px 0}
+  .top .wrap{display:flex;align-items:center;justify-content:space-between}
+  .logo{display:flex;align-items:center;gap:11px}
+  .logo svg{width:34px;height:34px}
+  .logo .word{font-family:'Space Grotesk';font-weight:700;font-size:19px}
+  .logo .word .os{color:var(--coral)}
+  .top nav{display:flex;gap:22px;font-family:'Space Mono';font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:#9C97C6}
+  .top nav a{color:#9C97C6;text-decoration:none}
+  .top nav a.active{color:#fff}
+  .top .user{width:32px;height:32px;border-radius:50%;background:var(--indigo);display:grid;place-items:center;font-family:'Space Grotesk';font-weight:600;font-size:13px}
+
+  /* page head */
+  .phead{display:flex;align-items:flex-end;justify-content:space-between;margin:34px 0 22px;flex-wrap:wrap;gap:16px}
+  .phead .eyebrow{font-family:'Space Mono';font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:var(--indigo);margin-bottom:6px}
+  .phead h1{font-size:30px;font-weight:600}
+  .phead .sub{color:var(--muted);font-size:14px;margin-top:4px}
+  .sortpill{font-family:'Space Mono';font-size:12px;color:var(--muted);background:var(--card);border:1px solid var(--line);border-radius:100px;padding:9px 15px;display:flex;align-items:center;gap:8px}
+  .sortpill b{color:var(--ink)}
+
+  /* event card */
+  .list{display:flex;flex-direction:column;gap:12px;padding-bottom:60px}
+  .ev{background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden;transition:box-shadow .18s,border-color .18s}
+  .ev:hover{box-shadow:0 12px 34px -20px rgba(91,61,245,.4)}
+  .ev.open{border-color:var(--indigo-2);box-shadow:0 18px 46px -22px rgba(91,61,245,.45)}
+  .row{display:grid;grid-template-columns:74px 1.6fr 1.1fr 150px 30px;gap:18px;align-items:center;padding:16px 20px;cursor:pointer}
+
+  /* urgency date block */
+  .when{width:74px;height:74px;border-radius:13px;background:var(--tint);display:flex;flex-direction:column;align-items:center;justify-content:center;flex:none}
+  .when .d{font-family:'Space Grotesk';font-weight:700;font-size:26px;line-height:1;color:var(--indigo)}
+  .when .m{font-family:'Space Mono';font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--indigo);margin-top:3px}
+  .when.soon{background:#FFE9E4}.when.soon .d,.when.soon .m{color:var(--coral)}
+
+  .main .name{font-family:'Space Grotesk';font-weight:600;font-size:18px}
+  .main .meta{display:flex;gap:14px;flex-wrap:wrap;margin-top:5px;color:var(--muted);font-size:13px}
+  .main .meta span{display:flex;align-items:center;gap:5px}
+  .countdown{font-family:'Space Mono';font-size:12px;font-weight:700;padding:3px 9px;border-radius:100px;display:inline-flex;align-items:center;gap:5px}
+  .cd-soon{background:#FFE9E4;color:#D4380D}
+  .cd-mid{background:#FFF4DE;color:#B77400}
+  .cd-ok{background:#E4F8F3;color:#0E9C82}
+
+  /* mini budget */
+  .budget .blabel{font-family:'Space Mono';font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;display:flex;justify-content:space-between;margin-bottom:6px}
+  .budget .blabel b{color:var(--ink);font-size:13px}
+  .bar{height:8px;background:var(--line);border-radius:100px;overflow:hidden}
+  .bar i{display:block;height:100%;border-radius:100px}
+  .b-ok i{background:var(--mint)} .b-mid i{background:var(--amber)} .b-over i{background:var(--coral)}
+  .budget .bnum{font-size:12px;color:var(--muted);margin-top:5px}
+  .budget .bnum b{color:var(--ink)}
+
+  /* speakers avatars */
+  .spk{display:flex;align-items:center}
+  .spk .av{width:30px;height:30px;border-radius:50%;border:2px solid var(--card);margin-left:-8px;display:grid;place-items:center;font-family:'Space Grotesk';font-weight:600;font-size:11px;color:#fff}
+  .spk .av:first-child{margin-left:0}
+  .spk .more{font-size:12px;color:var(--muted);margin-left:8px}
+
+  .chev{transition:transform .2s;color:var(--muted);justify-self:end}
+  .ev.open .chev{transform:rotate(180deg);color:var(--indigo)}
+
+  /* ---- expanded detail ---- */
+  .detail{max-height:0;overflow:hidden;transition:max-height .32s ease}
+  .ev.open .detail{max-height:760px}
+  .detail-in{border-top:1px solid var(--line);padding:22px 20px 24px;display:grid;grid-template-columns:1.15fr 1fr;gap:24px}
+  .d-block h4{font-family:'Space Mono';font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-bottom:12px}
+
+  /* donut budget */
+  .bud-detail{display:flex;gap:18px;align-items:center}
+  .donut{width:120px;height:120px;flex:none;position:relative}
+  .donut .center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+  .donut .center .pct{font-family:'Space Grotesk';font-weight:700;font-size:22px}
+  .donut .center .lb{font-family:'Space Mono';font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em}
+  .legend{flex:1;display:flex;flex-direction:column;gap:8px}
+  .legend .lr{display:flex;align-items:center;gap:9px;font-size:13px}
+  .legend .lr .sw{width:10px;height:10px;border-radius:3px;flex:none}
+  .legend .lr .nm{color:var(--ink)}
+  .legend .lr .vl{margin-left:auto;font-family:'Space Mono';font-size:12px;color:var(--muted)}
+
+  .alert{display:flex;gap:10px;align-items:flex-start;background:#FFF1ED;border:1px solid #FFD3C8;border-radius:11px;padding:11px 13px;margin-top:14px}
+  .alert .ic{color:var(--coral);font-size:15px;line-height:1.2}
+  .alert .tx{font-size:12.5px;color:#9A3412}
+  .alert .tx b{color:#C2410C}
+
+  /* speaker rows */
+  .sprow{display:flex;align-items:center;gap:11px;padding:9px 0;border-bottom:1px dashed var(--line)}
+  .sprow:last-child{border:0}
+  .sprow .av{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font-family:'Space Grotesk';font-weight:600;font-size:12px;color:#fff;flex:none}
+  .sprow .info{flex:1}
+  .sprow .info .n{font-weight:600;font-size:14px}
+  .sprow .info .r{font-size:12px;color:var(--muted)}
+  .status{font-family:'Space Mono';font-size:10px;letter-spacing:.05em;text-transform:uppercase;padding:4px 8px;border-radius:100px;font-weight:700}
+  .st-ok{background:#E4F8F3;color:#0E9C82} .st-wait{background:#FFF4DE;color:#B77400} .st-no{background:#FFE9E4;color:#D4380D}
+
+  .svc{display:flex;flex-wrap:wrap;gap:7px;margin-top:2px}
+  .svc .s{font-family:'Space Mono';font-size:11px;padding:5px 9px;border-radius:8px;border:1px solid var(--line);color:var(--muted);display:flex;align-items:center;gap:6px}
+  .svc .s.done{color:var(--mint);border-color:#BEEEE3;background:#F0FBF8}
+  .svc .s.done::before{content:"✓";color:var(--mint);font-weight:700}
+  .svc .s.wait::before{content:"○";color:var(--amber)}
+  .svc .s.wait{color:#B77400;border-color:#FBE4B3;background:#FFFaf0}
+
+  .dactions{grid-column:1/-1;display:flex;gap:10px;border-top:1px solid var(--line);padding-top:18px;margin-top:2px}
+  .btn{font-family:'Space Grotesk';font-weight:600;font-size:13px;padding:10px 16px;border-radius:10px;border:0;cursor:pointer}
+  .btn.primary{background:var(--indigo);color:#fff}
+  .btn.ghost{background:transparent;border:1px solid var(--line);color:var(--ink)}
+  .btn.ghost:hover{border-color:var(--indigo);color:var(--indigo)}
+
+  @media(max-width:820px){
+    .row{grid-template-columns:60px 1fr 44px;gap:12px}
+    .row .budget,.row .spk{display:none}
+    .detail-in{grid-template-columns:1fr}
+    .top nav{display:none}
+  }
+</style>
+</head>
+<body>
+
+<div class="top">
+  <div class="wrap">
+    <div class="logo">
+      <svg viewBox="0 0 64 64" fill="none">
+        <g stroke="#7C5CFF" stroke-width="2.4" opacity=".55">
+          <line x1="32" y1="32" x2="32" y2="11"/><line x1="32" y1="32" x2="51" y2="26"/>
+          <line x1="32" y1="32" x2="44" y2="49"/><line x1="32" y1="32" x2="20" y2="49"/><line x1="32" y1="32" x2="13" y2="26"/></g>
+        <circle cx="32" cy="11" r="4.4" fill="#FF6A4D"/><circle cx="51" cy="26" r="4" fill="#7C5CFF"/>
+        <circle cx="44" cy="49" r="4" fill="#7C5CFF"/><circle cx="20" cy="49" r="4" fill="#7C5CFF"/>
+        <circle cx="13" cy="26" r="4" fill="#7C5CFF"/><circle cx="32" cy="32" r="8" fill="#7C5CFF"/><circle cx="32" cy="32" r="3.2" fill="#fff"/></svg>
+      <span class="word">Mitumi<span class="os">OS</span></span>
+    </div>
+    <nav>
+      <a href="#" class="active">Eventos</a><a href="#">Espacios</a><a href="#">Ponentes</a><a href="#">Agente</a>
+    </nav>
+    <div class="user">MG</div>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="phead">
+    <div>
+      <div class="eyebrow">En curso</div>
+      <h1>Eventos en marcha</h1>
+      <div class="sub">6 eventos activos · ordenados por los que empiezan antes</div>
+    </div>
+    <div class="sortpill">Orden: <b>empiezan antes</b> ↓</div>
+  </div>
+
+  <div class="list">
+
+    <!-- EVENT 1 — urgent, over budget, expanded by default -->
+    <div class="ev open" onclick="toggle(this)">
+      <div class="row">
+        <div class="when soon"><span class="d">11</span><span class="m">Jul</span></div>
+        <div class="main">
+          <div class="name">Jornada Técnica Industria 4.0</div>
+          <div class="meta">
+            <span>📍 Palacio Euskalduna, Bilbao</span>
+            <span>👥 320 asist.</span>
+            <span class="countdown cd-soon">⚠ en 5 días</span>
+          </div>
+        </div>
+        <div class="budget">
+          <div class="blabel"><span>Presupuesto</span><b>106%</b></div>
+          <div class="bar b-over"><i style="width:100%"></i></div>
+          <div class="bnum"><b>15.850 €</b> / 15.000 € · <span style="color:var(--coral)">+850 €</span></div>
+        </div>
+        <div class="spk">
+          <div class="av" style="background:#5B3DF5">AL</div>
+          <div class="av" style="background:#FF6A4D">MK</div>
+          <div class="av" style="background:#10C9A6">JR</div>
+          <span class="more">+1</span>
+        </div>
+        <div class="chev">▾</div>
+      </div>
+
+      <div class="detail">
+        <div class="detail-in">
+          <div class="d-block">
+            <h4>Presupuesto por partidas</h4>
+            <div class="bud-detail">
+              <div class="donut">
+                <svg viewBox="0 0 42 42" width="120" height="120">
+                  <circle cx="21" cy="21" r="15.9" fill="none" stroke="#E6E4F2" stroke-width="6"/>
+                  <circle cx="21" cy="21" r="15.9" fill="none" stroke="#5B3DF5" stroke-width="6" stroke-dasharray="30 100" stroke-dashoffset="25" transform="rotate(-90 21 21)"/>
+                  <circle cx="21" cy="21" r="15.9" fill="none" stroke="#FF6A4D" stroke-width="6" stroke-dasharray="34 100" stroke-dashoffset="-5" transform="rotate(-90 21 21)"/>
+                  <circle cx="21" cy="21" r="15.9" fill="none" stroke="#FFB020" stroke-width="6" stroke-dasharray="16 100" stroke-dashoffset="-39" transform="rotate(-90 21 21)"/>
+                  <circle cx="21" cy="21" r="15.9" fill="none" stroke="#10C9A6" stroke-width="6" stroke-dasharray="20 100" stroke-dashoffset="-55" transform="rotate(-90 21 21)"/>
+                </svg>
+                <div class="center"><span class="pct">15.850€</span><span class="lb">total</span></div>
+              </div>
+              <div class="legend">
+                <div class="lr"><span class="sw" style="background:#FF6A4D"></span><span class="nm">Catering</span><span class="vl">5.400 € · 34%</span></div>
+                <div class="lr"><span class="sw" style="background:#5B3DF5"></span><span class="nm">Espacio</span><span class="vl">4.800 € · 30%</span></div>
+                <div class="lr"><span class="sw" style="background:#10C9A6"></span><span class="nm">Viajes ponentes</span><span class="vl">3.100 € · 20%</span></div>
+                <div class="lr"><span class="sw" style="background:#FFB020"></span><span class="nm">Técnica / AV</span><span class="vl">2.550 € · 16%</span></div>
+              </div>
+            </div>
+            <div class="alert">
+              <span class="ic">⚠</span>
+              <span class="tx"><b>Sobrecoste +850 €.</b> El catering (34%) está por encima de lo habitual (~25%). El agente propone avisar al cliente.</span>
+            </div>
+          </div>
+
+          <div class="d-block">
+            <h4>Ponentes · logística</h4>
+            <div class="sprow">
+              <div class="av" style="background:#5B3DF5">AL</div>
+              <div class="info"><div class="n">Ane Larrañaga</div><div class="r">Vigo · vuelo + hotel</div></div>
+              <span class="status st-ok">Confirmado</span>
+            </div>
+            <div class="sprow">
+              <div class="av" style="background:#FF6A4D">MK</div>
+              <div class="info"><div class="n">Markus Klein</div><div class="r">Múnich · vuelo</div></div>
+              <span class="status st-wait">Pendiente</span>
+            </div>
+            <div class="sprow">
+              <div class="av" style="background:#10C9A6">JR</div>
+              <div class="info"><div class="n">Julen Ruiz</div><div class="r">Donostia · tren</div></div>
+              <span class="status st-ok">Confirmado</span>
+            </div>
+            <div class="sprow">
+              <div class="av" style="background:#FFB020">CS</div>
+              <div class="info"><div class="n">Clara Sáez</div><div class="r">Madrid · ponencia sin subir</div></div>
+              <span class="status st-no">Falta</span>
+            </div>
+
+            <h4 style="margin-top:18px">Servicios</h4>
+            <div class="svc">
+              <span class="s done">Espacio</span><span class="s done">Catering</span>
+              <span class="s wait">Técnica / AV</span><span class="s wait">Azafatas</span><span class="s done">Cartelería</span>
+            </div>
+          </div>
+
+          <div class="dactions">
+            <button class="btn primary">Abrir evento</button>
+            <button class="btn ghost">Revisar aviso del agente</button>
+            <button class="btn ghost">Escaleta</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- EVENT 2 -->
+    <div class="ev" onclick="toggle(this)">
+      <div class="row">
+        <div class="when soon"><span class="d">18</span><span class="m">Jul</span></div>
+        <div class="main">
+          <div class="name">Congreso Salud Digital Euskadi</div>
+          <div class="meta">
+            <span>📍 Kursaal, Donostia</span><span>👥 540 asist.</span>
+            <span class="countdown cd-soon">en 12 días</span>
+          </div>
+        </div>
+        <div class="budget">
+          <div class="blabel"><span>Presupuesto</span><b>78%</b></div>
+          <div class="bar b-mid"><i style="width:78%"></i></div>
+          <div class="bnum"><b>21.100 €</b> / 27.000 €</div>
+        </div>
+        <div class="spk">
+          <div class="av" style="background:#7C5CFF">IE</div><div class="av" style="background:#10C9A6">PB</div>
+          <div class="av" style="background:#FFB020">TG</div><span class="more">+5</span>
+        </div>
+        <div class="chev">▾</div>
+      </div>
+      <div class="detail"><div class="detail-in">
+        <div class="d-block">
+          <h4>Presupuesto por partidas</h4>
+          <div class="bud-detail">
+            <div class="donut">
+              <svg viewBox="0 0 42 42" width="120" height="120">
+                <circle cx="21" cy="21" r="15.9" fill="none" stroke="#E6E4F2" stroke-width="6"/>
+                <circle cx="21" cy="21" r="15.9" fill="none" stroke="#5B3DF5" stroke-width="6" stroke-dasharray="32 100" stroke-dashoffset="25" transform="rotate(-90 21 21)"/>
+                <circle cx="21" cy="21" r="15.9" fill="none" stroke="#FF6A4D" stroke-width="6" stroke-dasharray="26 100" stroke-dashoffset="-7" transform="rotate(-90 21 21)"/>
+                <circle cx="21" cy="21" r="15.9" fill="none" stroke="#FFB020" stroke-width="6" stroke-dasharray="22 100" stroke-dashoffset="-33" transform="rotate(-90 21 21)"/>
+                <circle cx="21" cy="21" r="15.9" fill="none" stroke="#10C9A6" stroke-width="6" stroke-dasharray="20 100" stroke-dashoffset="-55" transform="rotate(-90 21 21)"/>
+              </svg>
+              <div class="center"><span class="pct">21.100€</span><span class="lb">de 27.000</span></div>
+            </div>
+            <div class="legend">
+              <div class="lr"><span class="sw" style="background:#5B3DF5"></span><span class="nm">Espacio</span><span class="vl">6.700 € · 32%</span></div>
+              <div class="lr"><span class="sw" style="background:#FF6A4D"></span><span class="nm">Catering</span><span class="vl">5.500 € · 26%</span></div>
+              <div class="lr"><span class="sw" style="background:#FFB020"></span><span class="nm">Técnica / AV</span><span class="vl">4.600 € · 22%</span></div>
+              <div class="lr"><span class="sw" style="background:#10C9A6"></span><span class="nm">Viajes ponentes</span><span class="vl">4.300 € · 20%</span></div>
+            </div>
+          </div>
+          <div class="alert" style="background:#E4F8F3;border-color:#BEEEE3">
+            <span class="ic" style="color:#0E9C82">✓</span>
+            <span class="tx" style="color:#0E6B59">Dentro de presupuesto. Sin alertas activas.</span>
+          </div>
+        </div>
+        <div class="d-block">
+          <h4>Ponentes · logística</h4>
+          <div class="sprow"><div class="av" style="background:#7C5CFF">IE</div><div class="info"><div class="n">Iker Etxeberria</div><div class="r">Bilbao · sin viaje</div></div><span class="status st-ok">Confirmado</span></div>
+          <div class="sprow"><div class="av" style="background:#10C9A6">PB</div><div class="info"><div class="n">Paula Bravo</div><div class="r">Barcelona · vuelo + hotel</div></div><span class="status st-ok">Confirmado</span></div>
+          <div class="sprow"><div class="av" style="background:#FFB020">TG</div><div class="info"><div class="n">Tomás Gil</div><div class="r">Sevilla · vuelo</div></div><span class="status st-wait">Pendiente</span></div>
+          <h4 style="margin-top:18px">Servicios</h4>
+          <div class="svc"><span class="s done">Espacio</span><span class="s done">Catering</span><span class="s done">Técnica / AV</span><span class="s wait">Azafatas</span><span class="s wait">Cartelería</span></div>
+        </div>
+        <div class="dactions">
+          <button class="btn primary">Abrir evento</button>
+          <button class="btn ghost">Escaleta</button>
+        </div>
+      </div></div>
+    </div>
+
+    <!-- EVENT 3 -->
+    <div class="ev" onclick="toggle(this)">
+      <div class="row">
+        <div class="when"><span class="d">29</span><span class="m">Jul</span></div>
+        <div class="main">
+          <div class="name">Gala Anual Cámara de Comercio</div>
+          <div class="meta"><span>📍 Teatro Arriaga, Bilbao</span><span>👥 210 asist.</span><span class="countdown cd-mid">en 23 días</span></div>
+        </div>
+        <div class="budget">
+          <div class="blabel"><span>Presupuesto</span><b>45%</b></div>
+          <div class="bar b-ok"><i style="width:45%"></i></div>
+          <div class="bnum"><b>8.100 €</b> / 18.000 €</div>
+        </div>
+        <div class="spk"><div class="av" style="background:#5B3DF5">RM</div><div class="av" style="background:#FF6A4D">LV</div><span class="more">+0</span></div>
+        <div class="chev">▾</div>
+      </div>
+      <div class="detail"><div class="detail-in">
+        <div class="d-block">
+          <h4>Presupuesto por partidas</h4>
+          <div class="bud-detail">
+            <div class="donut">
+              <svg viewBox="0 0 42 42" width="120" height="120">
+                <circle cx="21" cy="21" r="15.9" fill="none" stroke="#E6E4F2" stroke-width="6"/>
+                <circle cx="21" cy="21" r="15.9" fill="none" stroke="#5B3DF5" stroke-width="6" stroke-dasharray="40 100" stroke-dashoffset="25" transform="rotate(-90 21 21)"/>
+                <circle cx="21" cy="21" r="15.9" fill="none" stroke="#FF6A4D" stroke-width="6" stroke-dasharray="30 100" stroke-dashoffset="-15" transform="rotate(-90 21 21)"/>
+                <circle cx="21" cy="21" r="15.9" fill="none" stroke="#FFB020" stroke-width="6" stroke-dasharray="18 100" stroke-dashoffset="-45" transform="rotate(-90 21 21)"/>
+              </svg>
+              <div class="center"><span class="pct">8.100€</span><span class="lb">de 18.000</span></div>
+            </div>
+            <div class="legend">
+              <div class="lr"><span class="sw" style="background:#5B3DF5"></span><span class="nm">Espacio</span><span class="vl">3.240 € · 40%</span></div>
+              <div class="lr"><span class="sw" style="background:#FF6A4D"></span><span class="nm">Catering</span><span class="vl">2.430 € · 30%</span></div>
+              <div class="lr"><span class="sw" style="background:#FFB020"></span><span class="nm">Técnica / AV</span><span class="vl">1.460 € · 18%</span></div>
+              <div class="lr"><span class="sw" style="background:#10C9A6"></span><span class="nm">Otros</span><span class="vl">970 € · 12%</span></div>
+            </div>
+          </div>
+          <div class="alert" style="background:#E4F8F3;border-color:#BEEEE3">
+            <span class="ic" style="color:#0E9C82">✓</span>
+            <span class="tx" style="color:#0E6B59">Holgado. Fase de planificación.</span>
+          </div>
+        </div>
+        <div class="d-block">
+          <h4>Ponentes · logística</h4>
+          <div class="sprow"><div class="av" style="background:#5B3DF5">RM</div><div class="info"><div class="n">Rosa Mendia</div><div class="r">Bilbao · sin viaje</div></div><span class="status st-ok">Confirmado</span></div>
+          <div class="sprow"><div class="av" style="background:#FF6A4D">LV</div><div class="info"><div class="n">Luis Vega</div><div class="r">Valencia · por definir</div></div><span class="status st-wait">Pendiente</span></div>
+          <h4 style="margin-top:18px">Servicios</h4>
+          <div class="svc"><span class="s done">Espacio</span><span class="s wait">Catering</span><span class="s wait">Técnica / AV</span><span class="s wait">Cartelería</span></div>
+        </div>
+        <div class="dactions"><button class="btn primary">Abrir evento</button><button class="btn ghost">Escaleta</button></div>
+      </div></div>
+    </div>
+
+    <!-- EVENT 4 (collapsed, compact) -->
+    <div class="ev" onclick="toggle(this)">
+      <div class="row">
+        <div class="when"><span class="d">05</span><span class="m">Ago</span></div>
+        <div class="main">
+          <div class="name">Foro de Startups Bind 4.0</div>
+          <div class="meta"><span>📍 BAT, Bilbao</span><span>👥 180 asist.</span><span class="countdown cd-ok">en 30 días</span></div>
+        </div>
+        <div class="budget">
+          <div class="blabel"><span>Presupuesto</span><b>28%</b></div>
+          <div class="bar b-ok"><i style="width:28%"></i></div>
+          <div class="bnum"><b>3.900 €</b> / 14.000 €</div>
+        </div>
+        <div class="spk"><div class="av" style="background:#10C9A6">NB</div><div class="av" style="background:#5B3DF5">DH</div><span class="more">+3</span></div>
+        <div class="chev">▾</div>
+      </div>
+      <div class="detail"><div class="detail-in">
+        <div class="d-block"><h4>Resumen</h4><p style="font-size:14px;color:var(--muted)">Evento en fase inicial. Espacio reservado; resto de servicios y ponentes por confirmar.</p>
+          <div class="alert" style="background:#E4F8F3;border-color:#BEEEE3;margin-top:14px"><span class="ic" style="color:#0E9C82">✓</span><span class="tx" style="color:#0E6B59">Sin alertas.</span></div></div>
+        <div class="d-block"><h4>Servicios</h4><div class="svc"><span class="s done">Espacio</span><span class="s wait">Catering</span><span class="s wait">Técnica / AV</span></div></div>
+        <div class="dactions"><button class="btn primary">Abrir evento</button></div>
+      </div></div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  function toggle(el){ el.classList.toggle('open'); }
+</script>
+</body>
+</html>

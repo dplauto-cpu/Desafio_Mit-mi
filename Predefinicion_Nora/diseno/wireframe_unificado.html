@@ -1,0 +1,1100 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Wireframe · Crear Evento / Visor del Evento</title>
+<style>
+  :root{
+    --line:#2b2b45;
+    --paper:#fafafa;
+    --muted:#8a8a9a;
+    --accent:#e8e8f5;
+  }
+  *{box-sizing:border-box;}
+  body{
+    background:var(--paper);
+    font-family:'Segoe UI', 'Helvetica Neue', sans-serif;
+    color:var(--line);
+    margin:0;
+    padding:40px 20px;
+  }
+  .wrap{
+    max-width:1100px;
+    margin:0 auto;
+    display:flex;
+    flex-direction:column;
+    gap:60px;
+  }
+  h1{
+    font-size:14px;
+    letter-spacing:2px;
+    text-transform:uppercase;
+    color:var(--muted);
+    margin:0 0 16px 0;
+    font-weight:600;
+  }
+  .screen{
+    border:2px solid var(--line);
+    border-radius:4px;
+    background:#fff;
+    position:relative;
+  }
+  .screen-label{
+    position:absolute;
+    top:-13px;
+    left:16px;
+    background:var(--paper);
+    padding:0 8px;
+    font-size:11px;
+    font-weight:700;
+    letter-spacing:1px;
+    color:var(--line);
+  }
+  .navbar{
+    display:flex;
+    gap:10px;
+    padding:14px 20px;
+    border-bottom:2px solid var(--line);
+  }
+  .tab{
+    border:1.5px solid var(--line);
+    border-radius:3px;
+    padding:6px 18px;
+    font-size:12px;
+    color:var(--muted);
+  }
+  .tab.active{
+    background:var(--line);
+    color:#fff;
+  }
+  .content{
+    padding:28px;
+  }
+
+  /* ---- CREAR EVENTO ---- */
+  .form-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:24px;
+  }
+  .field{
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+  }
+  .field label{
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:0.5px;
+    color:var(--muted);
+    font-weight:600;
+  }
+  .box-input{
+    border:1.5px solid var(--line);
+    border-radius:3px;
+    height:38px;
+    background:#fff;
+  }
+  .box-input.small{height:34px;}
+  .section-title{
+    font-size:12px;
+    font-weight:700;
+    text-transform:uppercase;
+    letter-spacing:1px;
+    color:var(--line);
+    margin:28px 0 14px 0;
+    padding-bottom:6px;
+    border-bottom:1px dashed var(--muted);
+  }
+  .agente-card{
+    border:1.5px dashed var(--line);
+    border-radius:4px;
+    padding:14px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:10px;
+    font-size:12px;
+    color:var(--muted);
+  }
+  .btn{
+    display:inline-block;
+    border:1.5px solid var(--line);
+    border-radius:3px;
+    padding:9px 22px;
+    font-size:12px;
+    font-weight:700;
+    letter-spacing:0.5px;
+    text-transform:uppercase;
+    color:var(--line);
+    background:#fff;
+  }
+  .btn.primary{
+    background:var(--line);
+    color:#fff;
+  }
+  .note{
+    font-size:11px;
+    color:var(--muted);
+    font-style:italic;
+    margin-top:4px;
+  }
+  .upload-box{
+    border:2px dashed var(--muted);
+    border-radius:6px;
+    padding:26px;
+    text-align:center;
+    background:#fbfbff;
+  }
+  .upload-icon{
+    font-size:22px;
+    color:var(--muted);
+    margin-bottom:6px;
+  }
+  .upload-text{
+    font-size:12px;
+    font-weight:600;
+    color:var(--line);
+  }
+  .lugar-list{
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+    margin-top:14px;
+  }
+  .lugar-card{
+    border:1.5px solid var(--line);
+    border-radius:4px;
+    padding:14px 16px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+  }
+  .lugar-name{
+    font-size:13px;
+    font-weight:700;
+  }
+  .small-btn{
+    padding:6px 14px;
+    font-size:11px;
+    white-space:nowrap;
+  }
+  .lugar-card.confirmed{
+    border-color:#2b7a4b;
+    background:#f3fbf5;
+  }
+  .confirmed-badge{
+    display:inline-block;
+    margin-left:8px;
+    font-size:10px;
+    font-weight:700;
+    color:#2b7a4b;
+    border:1px solid #2b7a4b;
+    border-radius:10px;
+    padding:2px 8px;
+    vertical-align:middle;
+  }
+  .btn.disabled{
+    color:#2b7a4b;
+    border-color:#2b7a4b;
+    background:#eaf6ee;
+  }
+  .lugar-card{
+    position:relative;
+  }
+  .menu-dots{
+    border:1.5px solid var(--line);
+    border-radius:4px;
+    width:32px;
+    height:32px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:16px;
+    font-weight:700;
+    color:var(--muted);
+    cursor:pointer;
+    flex-shrink:0;
+  }
+  .menu-dots.active{
+    background:var(--line);
+    color:#fff;
+    border-color:var(--line);
+  }
+  .menu-wrap{
+    position:relative;
+  }
+  .dropdown{
+    position:absolute;
+    top:40px;
+    right:0;
+    background:#fff;
+    border:1.5px solid var(--line);
+    border-radius:4px;
+    min-width:250px;
+    z-index:5;
+    box-shadow:2px 3px 0 rgba(0,0,0,0.06);
+  }
+  .dropdown-item{
+    padding:10px 14px;
+    font-size:12px;
+    color:var(--line);
+    border-bottom:1px dashed var(--muted);
+    white-space:nowrap;
+  }
+  .dropdown-item:last-child{
+    border-bottom:none;
+  }
+  .lugar-card.menu-open{
+    margin-bottom:64px;
+  }
+  .proveedor-card{
+    border:1.5px solid var(--line);
+    border-radius:4px;
+    padding:14px 16px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:10px;
+  }
+  .proveedor-card.selected{
+    border-color:#2b7a4b;
+    background:#f3fbf5;
+  }
+  .tech-tags{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+    margin-top:10px;
+  }
+  .tag{
+    border:1.5px dashed var(--line);
+    border-radius:20px;
+    padding:6px 14px;
+    font-size:11px;
+    color:var(--line);
+  }
+  .pedido-box{
+    border:1.5px solid var(--line);
+    border-radius:4px;
+    padding:18px;
+    margin-top:10px;
+    background:#fbfbff;
+  }
+  .lugar-card-ext{
+    border:1.5px solid var(--line);
+    border-radius:4px;
+    padding:16px;
+    margin-bottom:14px;
+  }
+  .lugar-ext-header{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:10px;
+  }
+  .lugar-ext-info .info-row{
+    padding:6px 0;
+  }
+  .placeholder-block.small{
+    height:70px;
+    margin-top:10px;
+  }
+  .lugar-card-ext.menu-open{
+    margin-bottom:70px;
+  }
+  .servicios-list{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+    margin-top:8px;
+  }
+  .servicio-item{
+    border:1.5px dashed var(--line);
+    border-radius:20px;
+    padding:6px 14px;
+    font-size:11px;
+    color:var(--muted);
+  }
+  .servicio-item.checked{
+    border-style:solid;
+    border-color:#2b7a4b;
+    background:#f3fbf5;
+    color:#2b7a4b;
+    font-weight:600;
+  }
+  .dash-row{
+    display:grid;
+    grid-template-columns:64px 1.3fr 1.1fr 1fr 20px;
+    gap:18px;
+    align-items:center;
+    border:1.5px solid var(--line);
+    border-radius:6px;
+    padding:16px 18px;
+    margin-bottom:12px;
+  }
+  .dash-row .when{
+    width:64px;
+    height:64px;
+    border:1.5px solid var(--line);
+    border-radius:6px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    flex:none;
+  }
+  .dash-row .when .d{
+    font-size:20px;
+    font-weight:700;
+    line-height:1;
+  }
+  .dash-row .when .m{
+    font-size:10px;
+    text-transform:uppercase;
+    letter-spacing:1px;
+    color:var(--muted);
+    margin-top:3px;
+  }
+  .dash-budget .info-row{
+    font-size:11px;
+    padding:0 0 6px 0;
+    border:none;
+  }
+  .bar{
+    height:8px;
+    background:var(--accent);
+    border-radius:20px;
+    overflow:hidden;
+    border:1px solid var(--line);
+  }
+  .bar i{
+    display:block;
+    height:100%;
+    background:var(--line-solid, var(--line));
+    background:var(--line);
+  }
+  .bar i{
+    background:var(--line);
+    background-color:#5555aa;
+  }
+  .dash-pendientes .tech-tags{
+    margin-top:0;
+  }
+  .chev{
+    color:var(--muted);
+    font-size:14px;
+    justify-self:end;
+  }
+  .pres-header{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-end;
+    padding-bottom:16px;
+    border-bottom:2px solid var(--line);
+    margin-bottom:20px;
+  }
+  .pres-total{text-align:right;}
+  .pres-total-num{font-size:22px;font-weight:700;}
+  .pres-body{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:32px;
+    align-items:start;
+  }
+  .donut-wrap{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:18px;
+  }
+  .donut{position:relative;width:150px;height:150px;}
+  .donut-center{
+    position:absolute;inset:0;
+    display:flex;flex-direction:column;
+    align-items:center;justify-content:center;
+  }
+  .donut-pct{font-size:26px;font-weight:700;}
+  .donut-legend{
+    display:flex;flex-direction:column;gap:8px;
+    width:100%;
+  }
+  .donut-legend .lr{
+    display:flex;align-items:center;gap:8px;
+    font-size:12px;color:var(--line);
+  }
+  .donut-legend .lr b{margin-left:auto;}
+  .donut-legend .sw,.dev-total .sw{
+    width:12px;height:12px;border-radius:3px;flex:none;
+  }
+  .pres-partidas{display:flex;flex-direction:column;}
+  .dev-row{
+    display:grid;
+    grid-template-columns:1fr auto 80px;
+    gap:12px;
+    align-items:center;
+    padding:11px 0;
+    border-bottom:1px dashed var(--muted);
+  }
+  .partida-name{font-size:13px;font-weight:600;}
+  .partida-delta{text-align:right;font-size:13px;font-weight:700;}
+  .partida-delta.ok{color:#2b7a4b;}
+  .partida-delta.over{color:#c2410c;}
+  .partida-delta.neutral{color:var(--muted);}
+  .dev-total{
+    display:flex;justify-content:space-between;align-items:center;
+    margin-top:14px;padding-top:12px;
+    border-top:2px solid var(--line);
+    font-size:13px;font-weight:700;
+  }
+  .pon-table{
+    width:100%;
+    border-collapse:collapse;
+    font-size:12px;
+  }
+  .pon-table th{
+    text-align:left;
+    font-size:10px;
+    text-transform:uppercase;
+    letter-spacing:0.5px;
+    color:var(--muted);
+    padding:8px 10px;
+    border-bottom:2px solid var(--line);
+  }
+  .pon-table td{
+    padding:12px 10px;
+    border-bottom:1px dashed var(--muted);
+    vertical-align:middle;
+  }
+  .pon-table td.menu-dots{
+    border:none;
+    text-align:center;
+    color:var(--muted);
+    font-weight:700;
+  }
+  .pill{
+    display:inline-block;
+    font-size:10px;
+    font-weight:600;
+    padding:3px 10px;
+    border-radius:12px;
+    border:1px solid;
+    white-space:nowrap;
+  }
+  .pill.green{color:#2b7a4b;border-color:#2b7a4b;background:#f3fbf5;}
+  .pill.amber{color:#b06d00;border-color:#e2a03a;background:#fdf8ef;}
+  .pill.red{color:#c2410c;border-color:#c2410c;background:#fdf1ef;}
+  .pill.grey{color:var(--muted);border-color:var(--muted);background:#f7f7fa;}
+  .pon-actions{
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+    margin-top:6px;
+  }
+
+  /* ---- VISOR DEL EVENTO ---- */
+  .visor-header{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:20px 28px;
+    border-bottom:2px solid var(--line);
+  }
+  .visor-title{
+    font-size:16px;
+    font-weight:700;
+  }
+  .status-pill{
+    border:1.5px solid var(--line);
+    border-radius:20px;
+    padding:4px 14px;
+    font-size:11px;
+    font-weight:600;
+    color:var(--muted);
+  }
+  .visor-tabs{
+    display:flex;
+    gap:0;
+    border-bottom:2px solid var(--line);
+  }
+  .vtab{
+    flex:1;
+    text-align:center;
+    padding:12px 0;
+    font-size:11px;
+    color:var(--muted);
+    border-right:1px solid var(--line);
+    text-transform:uppercase;
+    letter-spacing:0.5px;
+  }
+  .vtab:last-child{border-right:none;}
+  .vtab.active{
+    color:var(--line);
+    font-weight:700;
+    background:var(--accent);
+  }
+  .visor-body{
+    display:grid;
+    grid-template-columns:1.3fr 1fr;
+    gap:0;
+  }
+  .panel-main{
+    padding:24px 28px;
+    border-right:2px solid var(--line);
+    min-height:260px;
+  }
+  .panel-side{
+    padding:24px 28px;
+    min-height:260px;
+    display:flex;
+    flex-direction:column;
+    gap:16px;
+  }
+  .info-row{
+    display:flex;
+    justify-content:space-between;
+    font-size:12px;
+    padding:8px 0;
+    border-bottom:1px dashed var(--muted);
+  }
+  .info-row span:first-child{color:var(--muted);}
+  .info-row span:last-child{font-weight:600;}
+  .placeholder-block{
+    border:1.5px dashed var(--muted);
+    border-radius:4px;
+    height:120px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    color:var(--muted);
+    font-size:11px;
+    margin-top:12px;
+  }
+  .footer-actions{
+    display:flex;
+    justify-content:space-between;
+    padding:18px 28px;
+    border-top:2px solid var(--line);
+  }
+  .btn.danger{
+    border-color:#8a2b2b;
+    color:#8a2b2b;
+  }
+  .annot{
+    font-size:11px;
+    color:#5555aa;
+    background:#eef0ff;
+    padding:2px 8px;
+    border-radius:3px;
+    margin-left:8px;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- CREAR EVENTO -->
+  <div>
+    <h1>Pantalla 1 — Crear evento</h1>
+    <div class="screen">
+      <div class="screen-label">CREAR EVENTO</div>
+      <div class="content">
+
+        <div class="section-title">Briefing <span class="annot">autocompletar con IA</span></div>
+        <div class="upload-box">
+          <div class="upload-icon">⇧</div>
+          <div class="upload-text">Subir resumen del evento (PDF / DOC)</div>
+          <div class="note" style="margin-top:6px;">El agente lee el documento y autocompleta los campos de abajo. Revisa antes de confirmar.</div>
+        </div>
+
+        <div class="section-title">Datos principales</div>
+        <div class="form-grid">
+          <div class="field">
+            <label>Nombre del evento</label>
+            <div class="box-input"></div>
+          </div>
+          <div class="field">
+            <label>Cliente</label>
+            <div class="box-input"></div>
+          </div>
+          <div class="field">
+            <label>Tipo de evento</label>
+            <div class="box-input"></div>
+          </div>
+          <div class="field">
+            <label>Nº de personas</label>
+            <div class="box-input small"></div>
+          </div>
+          <div class="field">
+            <label>Fecha inicio</label>
+            <div class="box-input small"></div>
+          </div>
+          <div class="field">
+            <label>Fecha fin</label>
+            <div class="box-input small"></div>
+          </div>
+        </div>
+
+        <div style="margin-top:32px; display:flex; gap:12px; justify-content:flex-end;">
+          <div class="btn">Cancelar</div>
+          <div class="btn primary">Crear evento</div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- PÁGINA LUGAR -->
+  <div>
+    <h1>Pantalla 2 — Lugar</h1>
+    <div class="screen">
+      <div class="screen-label">LUGAR</div>
+      <div class="content">
+
+        <div class="section-title" style="margin-top:0;">Buscador de lugar</div>
+        <div class="field">
+          <label>Buscar ubicación</label>
+          <div class="box-input"></div>
+        </div>
+
+        <div class="lugar-list">
+          <div class="lugar-card-ext menu-open">
+            <div class="lugar-ext-header">
+              <div class="lugar-name">Opción de lugar 1</div>
+              <div class="menu-wrap">
+                <div class="menu-dots active">⋮</div>
+                <div class="dropdown">
+                  <div class="dropdown-item">📄 Ver resumen de características y servicios</div>
+                  <div class="dropdown-item">✉ Contactar por email</div>
+                  <div class="dropdown-item">✓ Confirmar lugar</div>
+                </div>
+              </div>
+            </div>
+            <div class="lugar-ext-info">
+              <div class="info-row"><span>Capacidad</span><span>—</span></div>
+              <div class="info-row"><span>Zona</span><span>—</span></div>
+              <div class="info-row"><span>Servicios incluidos</span><span>Catering · Parking · Wifi</span></div>
+              <div class="info-row"><span>Valoración</span><span>—</span></div>
+            </div>
+            <div class="placeholder-block small">Galería / fotos del espacio</div>
+          </div>
+
+          <div class="lugar-card-ext">
+            <div class="lugar-ext-header">
+              <div class="lugar-name">Opción de lugar 2</div>
+              <div class="menu-dots">⋮</div>
+            </div>
+            <div class="lugar-ext-info">
+              <div class="info-row"><span>Capacidad</span><span>—</span></div>
+              <div class="info-row"><span>Zona</span><span>—</span></div>
+              <div class="info-row"><span>Servicios incluidos</span><span>Catering · Terraza</span></div>
+              <div class="info-row"><span>Valoración</span><span>—</span></div>
+            </div>
+            <div class="placeholder-block small">Galería / fotos del espacio</div>
+          </div>
+        </div>
+
+        <div class="section-title">Lugar asignado</div>
+        <div class="pedido-box">
+          <div class="info-row"><span>Lugar confirmado</span><span>Opción de lugar 1</span></div>
+          <div class="form-grid" style="margin-top:14px;">
+            <div class="field">
+              <label>Fecha inicio</label>
+              <div class="box-input small"></div>
+            </div>
+            <div class="field">
+              <label>Fecha fin</label>
+              <div class="box-input small"></div>
+            </div>
+            <div class="field">
+              <label>Presupuesto</label>
+              <div class="box-input small"></div>
+            </div>
+            <div class="field">
+              <label>Estado</label>
+              <div class="box-input small"></div>
+            </div>
+            <div class="field" style="grid-column:1 / -1;">
+              <label>Servicios incluidos</label>
+              <div class="servicios-list">
+                <div class="servicio-item checked">☑ Catering</div>
+                <div class="servicio-item checked">☑ Parking</div>
+                <div class="servicio-item">☐ Luces</div>
+                <div class="servicio-item">☐ Sonido</div>
+                <div class="servicio-item">☐ Wifi</div>
+                <div class="servicio-item">☐ Mobiliario</div>
+                <div class="servicio-item">☐ Seguridad</div>
+                <div class="servicio-item">+ Añadir servicio</div>
+              </div>
+            </div>
+          </div>
+          <div style="margin-top:16px; display:flex; gap:12px; justify-content:flex-end;">
+            <div class="btn">Editar</div>
+            <div class="btn primary">Confirmar asignación</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- VISOR DEL EVENTO -->
+  <div>
+    <h1>Pantalla 3 — Visor del evento</h1>
+    <div class="screen">
+      <div class="screen-label">VISOR DEL EVENTO</div>
+
+      <div class="visor-header">
+        <div class="visor-title">Nombre del evento</div>
+        <div class="status-pill">Estado: Pre-evento</div>
+      </div>
+
+      <div class="visor-tabs">
+        <div class="vtab">Crear evento</div>
+        <div class="vtab">Lugar</div>
+        <div class="vtab active">Audiovisuales</div>
+        <div class="vtab">Servicios</div>
+      </div>
+
+      <div class="visor-body">
+        <div class="panel-main">
+          <div class="section-title" style="margin-top:0;">Proveedores audiovisuales</div>
+
+          <div class="proveedor-card">
+            <div>
+              <div class="lugar-name">Proveedor A — Sonido e iluminación</div>
+              <div class="note" style="margin-top:2px;">Valoración · zona · disponibilidad</div>
+            </div>
+            <div class="btn small-btn">Contratar ›</div>
+          </div>
+          <div class="proveedor-card selected">
+            <div>
+              <div class="lugar-name">Proveedor B — Video y streaming <span class="confirmed-badge">✓ Contratado</span></div>
+              <div class="note" style="margin-top:2px;">Valoración · zona · disponibilidad</div>
+            </div>
+            <div class="btn small-btn disabled">Contratado</div>
+          </div>
+          <div class="proveedor-card">
+            <div>
+              <div class="lugar-name">Proveedor C — Pantallas LED</div>
+              <div class="note" style="margin-top:2px;">Valoración · zona · disponibilidad</div>
+            </div>
+            <div class="btn small-btn">Contratar ›</div>
+          </div>
+
+          <div class="section-title">Necesidades técnicas</div>
+          <div class="tech-tags">
+            <div class="tag">Sonido — 2 altavoces + mesa mezclas</div>
+            <div class="tag">Iluminación — escenario + ambiente</div>
+            <div class="tag">Vídeo — 1 pantalla LED 4x3</div>
+            <div class="tag">Streaming — retransmisión en directo</div>
+            <div class="tag">+ Añadir necesidad</div>
+          </div>
+
+          <div class="section-title">Pedido</div>
+          <div class="pedido-box">
+            <div class="info-row"><span>Proveedor</span><span>Proveedor B — Video y streaming</span></div>
+            <div class="info-row"><span>Estado del pedido</span><span>Generado — pendiente de confirmar</span></div>
+            <div class="info-row"><span>Coste estimado</span><span>—</span></div>
+            <div class="field" style="margin-top:14px;">
+              <label>Coste definitivo</label>
+              <div class="box-input small"></div>
+            </div>
+            <div style="margin-top:16px; display:flex; gap:12px; justify-content:flex-end;">
+              <div class="btn">Generar pedido</div>
+              <div class="btn primary">Confirmar pedido</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel-side">
+          <div class="section-title" style="margin-top:0;">Resumen audiovisuales</div>
+          <div class="info-row"><span>Proveedores contratados</span><span>1 / 3</span></div>
+          <div class="info-row"><span>Pedidos confirmados</span><span>0</span></div>
+          <div class="info-row"><span>Coste definitivo total</span><span>—</span></div>
+          <div class="section-title">Datos críticos</div>
+          <div class="info-row"><span>Status</span><span>Pre-evento</span></div>
+          <div class="info-row"><span>Última actualización</span><span>—</span></div>
+        </div>
+      </div>
+
+      <div class="footer-actions">
+        <div class="btn danger">Cancelar evento</div>
+        <div class="btn primary">Editar evento</div>
+      </div>
+
+    </div>
+  </div>
+  <!-- PRESUPUESTO -->
+  <div>
+    <h1>Pantalla 4 — Presupuesto</h1>
+    <div class="screen">
+      <div class="screen-label">PRESUPUESTO</div>
+      <div class="content">
+
+        <div class="pres-header">
+          <div>
+            <div class="lugar-name" style="font-size:16px;">Congreso Anual Industria</div>
+            <div class="note" style="margin-top:2px;">Palacio Kursaal, Donostia · 14 Jul · <b style="font-style:normal;color:#c2410c;">8 días restantes</b></div>
+          </div>
+          <div class="pres-total">
+            <div class="pres-total-num">21.100 € <span class="note" style="font-style:normal;">/ 27.000 €</span></div>
+            <div class="note">78% del presupuesto ejecutado</div>
+          </div>
+        </div>
+
+        <div class="pres-body">
+          <div class="donut-wrap">
+            <div class="donut">
+              <svg viewBox="0 0 42 42" width="150" height="150">
+                <circle cx="21" cy="21" r="15.9" fill="none" stroke="var(--accent)" stroke-width="6"/>
+                <circle cx="21" cy="21" r="15.9" fill="none" stroke="#5555aa" stroke-width="6" stroke-dasharray="23 100" stroke-dashoffset="25" transform="rotate(-90 21 21)"/>
+                <circle cx="21" cy="21" r="15.9" fill="none" stroke="#2b7a4b" stroke-width="6" stroke-dasharray="20 100" stroke-dashoffset="2" transform="rotate(-90 21 21)"/>
+                <circle cx="21" cy="21" r="15.9" fill="none" stroke="#c2410c" stroke-width="6" stroke-dasharray="20 100" stroke-dashoffset="-18" transform="rotate(-90 21 21)"/>
+                <circle cx="21" cy="21" r="15.9" fill="none" stroke="#e2a03a" stroke-width="6" stroke-dasharray="15 100" stroke-dashoffset="-38" transform="rotate(-90 21 21)"/>
+              </svg>
+              <div class="donut-center">
+                <div class="donut-pct">78%</div>
+                <div class="note" style="font-style:normal;">ejecutado</div>
+              </div>
+            </div>
+            <div class="donut-legend">
+              <div class="lr"><span class="sw" style="background:#5555aa"></span>Espacio <b>6.160 €</b></div>
+              <div class="lr"><span class="sw" style="background:#2b7a4b"></span>Catering <b>5.500 €</b></div>
+              <div class="lr"><span class="sw" style="background:#c2410c"></span>Técnica / AV <b>5.430 €</b></div>
+              <div class="lr"><span class="sw" style="background:#e2a03a"></span>Viajes <b>4.010 €</b></div>
+            </div>
+          </div>
+
+          <div class="pres-partidas">
+            <div class="section-title" style="margin-top:0;">Desviación por partida</div>
+            <div class="dev-row">
+              <span class="partida-name">Espacio</span>
+              <span class="note" style="font-style:normal;">6.160 / 6.700 €</span>
+              <span class="partida-delta ok">−540 €</span>
+            </div>
+            <div class="dev-row">
+              <span class="partida-name">Catering</span>
+              <span class="note" style="font-style:normal;">5.500 / 5.500 €</span>
+              <span class="partida-delta neutral">0 €</span>
+            </div>
+            <div class="dev-row">
+              <span class="partida-name">Técnica / AV</span>
+              <span class="note" style="font-style:normal;">5.430 / 4.600 €</span>
+              <span class="partida-delta over">+830 €</span>
+            </div>
+            <div class="dev-row">
+              <span class="partida-name">Viajes / logística</span>
+              <span class="note" style="font-style:normal;">4.010 / 4.300 €</span>
+              <span class="partida-delta ok">−290 €</span>
+            </div>
+            <div class="dev-total">
+              <span>Desviación total</span>
+              <span class="partida-delta neutral">+0 €</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- DASHBOARD ADMIN PONENTES -->
+  <div>
+    <h1>Pantalla 5 — Dashboard admin · Ponentes por evento</h1>
+    <div class="screen">
+      <div class="screen-label">PONENTES · POR EVENTO</div>
+
+      <div class="visor-header">
+        <div>
+          <div class="visor-title">Congreso Anual Industria</div>
+          <div class="note" style="margin-top:2px;">Filtrado por evento · 4 ponentes</div>
+        </div>
+        <div class="btn primary">+ Nuevo ponente</div>
+      </div>
+
+      <div class="content">
+        <div class="field" style="margin-bottom:16px;">
+          <label>Buscar ponente · filtrar por estado</label>
+          <div class="box-input"></div>
+        </div>
+
+        <table class="pon-table">
+          <thead>
+            <tr>
+              <th>Ponente</th>
+              <th>Estado</th>
+              <th>Documentación</th>
+              <th>Ponencia</th>
+              <th>Viajes</th>
+              <th>Facturación</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><b>Ane Etxeberria</b><div class="note">Tecnalia · Keynote</div></td>
+              <td><span class="pill green">Confirmado</span></td>
+              <td><span class="pill green">Completa</span></td>
+              <td>Sala A · 10:00</td>
+              <td><span class="pill green">Cerrado</span></td>
+              <td><span class="pill amber">Pdte. pago</span></td>
+              <td class="menu-dots">⋮</td>
+            </tr>
+            <tr>
+              <td><b>Jon Aguirre</b><div class="note">Mondragon · Mesa redonda</div></td>
+              <td><span class="pill amber">Pendiente</span></td>
+              <td><span class="pill red">Falta autoriz.</span></td>
+              <td>Sala A · 12:00</td>
+              <td><span class="pill amber">Sin cerrar</span></td>
+              <td><span class="pill grey">—</span></td>
+              <td class="menu-dots">⋮</td>
+            </tr>
+            <tr>
+              <td><b>Maite Sánchez</b><div class="note">EHU/UPV · Ponencia</div></td>
+              <td><span class="pill green">Confirmado</span></td>
+              <td><span class="pill amber">CV pendiente</span></td>
+              <td>Sala B · 16:00</td>
+              <td><span class="pill green">Cerrado</span></td>
+              <td><span class="pill green">Pagada</span></td>
+              <td class="menu-dots">⋮</td>
+            </tr>
+            <tr>
+              <td><b>Iker Ruiz</b><div class="note">Sidenor · Invitado</div></td>
+              <td><span class="pill red">No confirma</span></td>
+              <td><span class="pill grey">—</span></td>
+              <td>Por asignar</td>
+              <td><span class="pill grey">—</span></td>
+              <td><span class="pill grey">—</span></td>
+              <td class="menu-dots">⋮</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="section-title">Bloqueos activos</div>
+        <div class="tech-tags">
+          <div class="tag" style="border-color:#c2410c;color:#c2410c;">Jon Aguirre — falta autorización de imagen</div>
+          <div class="tag" style="border-color:#c2410c;color:#c2410c;">Iker Ruiz — sin confirmar asistencia</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FICHA DETALLE PONENTE -->
+  <div>
+    <h1>Pantalla 6 — Ficha detalle de ponente</h1>
+    <div class="screen">
+      <div class="screen-label">FICHA PONENTE</div>
+
+      <div class="visor-header">
+        <div>
+          <div class="visor-title">Ane Etxeberria</div>
+          <div class="note" style="margin-top:2px;">Tecnalia · Keynote · Congreso Anual Industria</div>
+        </div>
+        <div class="status-pill">Estado: Confirmado</div>
+      </div>
+
+      <div class="visor-tabs">
+        <div class="vtab active">Documentación</div>
+        <div class="vtab">Ponencia</div>
+        <div class="vtab">Viajes</div>
+        <div class="vtab">Facturación</div>
+      </div>
+
+      <div class="visor-body">
+        <div class="panel-main">
+          <div class="section-title" style="margin-top:0;">Documentación</div>
+          <div class="info-row"><span>CV</span><span class="pill green">Recibido</span></div>
+          <div class="info-row"><span>Foto</span><span class="pill green">Recibida</span></div>
+          <div class="info-row"><span>Presentación</span><span class="pill amber">Pdte. revisión</span></div>
+          <div class="info-row"><span>Autorización de imagen</span><span class="pill green">Firmada</span></div>
+          <div class="info-row"><span>Ficha técnica</span><span class="pill grey">No aplica</span></div>
+
+          <div class="section-title">Viajes / logística</div>
+          <div class="info-row"><span>Vuelo</span><span>BIO → MAD · 13 Jul</span></div>
+          <div class="info-row"><span>Taxi</span><span>Aeropuerto → hotel</span></div>
+          <div class="info-row"><span>Hotel</span><span>2 noches · 13-15 Jul</span></div>
+          <div class="info-row"><span>Accesibilidad</span><span>—</span></div>
+
+          <div class="section-title">Facturación</div>
+          <div class="info-row"><span>Datos fiscales</span><span class="pill green">Completos</span></div>
+          <div class="info-row"><span>Factura</span><span class="pill green">Subida</span></div>
+          <div class="info-row"><span>Importe</span><span>1.800 €</span></div>
+          <div class="info-row"><span>Estado</span><span class="pill amber">Pdte. pago</span></div>
+        </div>
+
+        <div class="panel-side">
+          <div class="section-title" style="margin-top:0;">Contacto</div>
+          <div class="info-row"><span>Empresa</span><span>Tecnalia</span></div>
+          <div class="info-row"><span>Cargo</span><span>Investigadora</span></div>
+          <div class="info-row"><span>Email</span><span>—</span></div>
+          <div class="info-row"><span>Teléfono</span><span>—</span></div>
+          <div class="section-title">Histórico</div>
+          <div class="note">3 eventos anteriores · última participación 2024.</div>
+        </div>
+      </div>
+
+      <div class="footer-actions">
+        <div class="btn">Solicitar corrección</div>
+        <div class="btn primary">Editar ficha</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PORTAL PONENTE -->
+  <div>
+    <h1>Pantalla 7 — Portal del ponente</h1>
+    <div class="screen">
+      <div class="screen-label">PORTAL PONENTE</div>
+
+      <div class="visor-header">
+        <div>
+          <div class="visor-title">Hola, Ane</div>
+          <div class="note" style="margin-top:2px;">Vista del ponente · acceso propio</div>
+        </div>
+        <div class="status-pill">Congreso Anual Industria</div>
+      </div>
+
+      <div class="visor-body">
+        <div class="panel-main">
+          <div class="section-title" style="margin-top:0;">Mi evento actual</div>
+          <div class="info-row"><span>Ponencia</span><span>Keynote de apertura</span></div>
+          <div class="info-row"><span>Horario</span><span>10:00 · Sala A</span></div>
+          <div class="info-row"><span>Documentos</span><span class="pill amber">1 pendiente</span></div>
+
+          <div class="section-title">Tareas pendientes</div>
+          <div class="tech-tags">
+            <div class="tag" style="border-color:#c2410c;color:#c2410c;">Subir presentación final</div>
+            <div class="tag">Confirmar menú cena</div>
+          </div>
+
+          <div class="section-title">Acciones</div>
+          <div class="pon-actions">
+            <div class="btn">⇧ Subir documento</div>
+            <div class="btn">✈ Consultar viaje</div>
+            <div class="btn">✉ Enviar duda</div>
+          </div>
+        </div>
+
+        <div class="panel-side">
+          <div class="section-title" style="margin-top:0;">Mi ficha</div>
+          <div class="info-row"><span>Empresa</span><span>Tecnalia</span></div>
+          <div class="info-row"><span>Cargo</span><span>Investigadora</span></div>
+          <div class="info-row"><span>Email</span><span>—</span></div>
+          <div class="btn small-btn" style="margin-top:10px;">Solicitar corrección de datos</div>
+
+          <div class="section-title">Mis eventos</div>
+          <div class="info-row"><span>Actual</span><span>Congreso Anual Industria</span></div>
+          <div class="info-row"><span>Históricos</span><span>3 eventos ›</span></div>
+
+          <div class="section-title">Facturación</div>
+          <div class="info-row"><span>Estado</span><span class="pill amber">En revisión</span></div>
+          <div class="btn small-btn" style="margin-top:10px;">Subir factura</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
