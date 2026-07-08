@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ágora — Arquitectura de agentes de Mitumi (v2)</title>
+<style>
+  body{ margin:0; padding:32px; background:#F7F6F2; font-family:'Segoe UI', Arial, sans-serif; display:flex; justify-content:center; }
+  @media (prefers-color-scheme: dark){ body{ background:#171614; } }
+  .page{ max-width:900px; width:100%; }
+  .page > h1{ font-size:18px; margin:0 0 4px; }
+  .page > .subtitle{ font-size:13px; color:#5F5E5A; margin:0 0 20px; font-style:italic; }
+  .sr-only{ position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); }
+</style>
+</head>
+<body>
+<div class="page">
+<h1>Ágora — arquitectura de agentes de Mitumi</h1>
+<p class="subtitle">Ágora (gr. plaza pública, lugar de encuentro y debate) — plataforma principal de Mitumi, donde suceden los eventos.</p>
+
+<div class="mit-detail">
+<h2 class="sr-only">Diagrama de la arquitectura de agentes de Ágora: un agente orquestador que coordina a cuatro agentes especializados (Gestor de correos, Operis, Hermes y Lumen), y un quinto agente, Vigil, que opera de forma independiente sin depender del orquestador. Incluye responsables de cada agente y el detalle de qué hace, qué hace un humano y qué no hace nunca cada agente.</h2>
+
+<style>
+.mit-detail{
+  --bg:#FFFFFF; --bg2:#F7F6F2; --text:#2C2C2A; --text2:#5F5E5A; --muted:#888780; --border:#D3D1C7;
+  --purple-bg:#EEEDFE; --purple-tx:#26215C;
+  --teal-bg:#E1F5EE; --teal-tx:#04342C;
+  --coral-bg:#FAECE7; --coral-tx:#4A1B0C;
+  --pink-bg:#FBEAF0; --pink-tx:#4B1528;
+  --blue-bg:#E6F1FB; --blue-tx:#042C53;
+  --gray-bg:#F1EFE8; --gray-tx:#2C2C2A;
+  --do-bg:#EAF3DE; --do-tx:#173404;
+  --human-bg:#F1EFE8; --human-tx:#444441;
+  --dont-bg:#FBE7E4; --dont-tx:#5C1B12;
+  color:var(--text); font-size:14px; line-height:1.5;
+}
+@media (prefers-color-scheme: dark){
+  .mit-detail{
+    --bg:#242320; --bg2:#1c1b19; --text:#EDEBE3; --text2:#C2C0B6; --muted:#8B8A83; --border:#454440;
+    --purple-bg:#3C3489; --purple-tx:#CECBF6;
+    --teal-bg:#085041; --teal-tx:#9FE1CB;
+    --coral-bg:#712B13; --coral-tx:#F5C4B3;
+    --pink-bg:#72243E; --pink-tx:#F4C0D1;
+    --blue-bg:#0C447C; --blue-tx:#B5D4F4;
+    --gray-bg:#444441; --gray-tx:#D3D1C7;
+    --do-bg:#27500A; --do-tx:#C0DD97;
+    --human-bg:#444441; --human-tx:#D3D1C7;
+    --dont-bg:#5C2016; --dont-tx:#F5B8A9;
+  }
+}
+.mit-detail .rule{ border-left:3px solid var(--purple-tx); background:var(--purple-bg); color:var(--purple-tx); padding:10px 14px; border-radius:6px; font-size:13px; margin-bottom:8px; }
+.mit-detail .rule b{ font-weight:600; }
+.mit-detail .rule.exception{ border-left-color:var(--pink-tx); background:var(--pink-bg); color:var(--pink-tx); margin-bottom:24px; }
+
+.mit-detail .hub{ display:flex; flex-direction:column; align-items:center; margin-bottom:20px; }
+.mit-detail .orc{ background:var(--purple-bg); color:var(--purple-tx); border-radius:8px; padding:10px 20px; text-align:center; font-weight:600; font-size:14px; }
+.mit-detail .orc span{ display:block; font-weight:400; font-size:12px; margin-top:2px; opacity:0.85; }
+.mit-detail .stem{ width:1px; height:18px; background:var(--border); }
+.mit-detail .agents-row{ display:flex; flex-wrap:wrap; justify-content:center; gap:14px 10px; position:relative; padding-top:18px; width:100%; }
+.mit-detail .agents-row::before{ content:""; position:absolute; top:0; left:8%; right:8%; height:1px; background:var(--border); }
+.mit-detail .chip{ position:relative; padding-top:18px; flex:0 1 158px; }
+.mit-detail .chip::before{ content:""; position:absolute; top:0; left:50%; width:1px; height:18px; background:var(--border); }
+.mit-detail .chip-inner{ border-radius:6px; padding:8px 10px; text-align:center; font-size:12px; font-weight:600; }
+.mit-detail .chip-inner small{ display:block; font-weight:400; font-size:11px; margin-top:2px; opacity:0.8; }
+
+.mit-detail .indep{ display:flex; flex-direction:column; align-items:center; margin-bottom:32px; }
+.mit-detail .indep-label{ font-size:11px; color:var(--muted); margin-bottom:8px; border-top:1px dashed var(--border); padding-top:10px; width:60%; text-align:center; }
+.mit-detail .chip.standalone{ flex:0 0 auto; padding-top:0; }
+.mit-detail .chip.standalone::before{ display:none; }
+.mit-detail .chip.standalone .chip-inner{ border:1px dashed var(--pink-tx); }
+
+.mit-detail h3.section-title{ font-size:14px; font-weight:600; margin:0 0 14px; color:var(--text); }
+
+.mit-detail .phases{ display:grid; grid-template-columns:repeat(auto-fit, minmax(260px,1fr)); gap:14px; margin-bottom:24px; }
+.mit-detail .card{ background:var(--bg); border:1px solid var(--border); border-radius:8px; padding:14px; }
+.mit-detail .card.gap{ border-style:dashed; }
+.mit-detail .card-head{ display:flex; align-items:baseline; gap:8px; margin-bottom:2px; }
+.mit-detail .num{ font-size:12px; font-weight:700; color:var(--muted); }
+.mit-detail .card-title{ font-size:14px; font-weight:600; }
+.mit-detail .card-meaning{ font-size:11.5px; color:var(--muted); font-style:italic; margin:0 0 2px; }
+.mit-detail .card-owner{ font-size:11px; color:var(--muted); margin:0 0 8px; }
+.mit-detail .agent-chips{ display:flex; flex-wrap:wrap; gap:6px; margin-bottom:10px; }
+.mit-detail .agent-chips span{ font-size:11px; padding:2px 8px; border-radius:99px; font-weight:600; }
+.mit-detail .tasks{ list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:6px; }
+.mit-detail .tasks li{ display:flex; gap:8px; align-items:flex-start; font-size:12.5px; color:var(--text2); }
+.mit-detail .badge{ flex:0 0 auto; font-size:10.5px; font-weight:600; padding:1px 7px; border-radius:99px; white-space:nowrap; margin-top:1px; }
+.mit-detail .badge.do{ background:var(--do-bg); color:var(--do-tx); }
+.mit-detail .badge.human{ background:var(--human-bg); color:var(--human-tx); }
+.mit-detail .badge.dont{ background:var(--dont-bg); color:var(--dont-tx); }
+.mit-detail .note{ font-size:12px; color:var(--muted); font-style:italic; margin-top:4px; }
+
+.mit-detail .legend{ display:flex; flex-wrap:wrap; gap:16px; font-size:12px; color:var(--text2); border-top:1px solid var(--border); padding-top:14px; }
+.mit-detail .legend-item{ display:flex; align-items:center; gap:6px; }
+</style>
+
+<div class="rule">
+<b>Regla del orquestador (arquitectura Ágora):</b> el agente orquestador coordina a sus agentes especializados. Ningún agente invoca o encadena directamente a otro — devuelve su resultado al orquestador, que decide el siguiente paso.
+</div>
+<div class="rule exception">
+<b>Excepción:</b> el agente Vigil (05, alertas de concursos públicos) <b>no depende del orquestador</b> — opera de forma autónoma dentro de la plataforma.
+</div>
+
+<div class="hub">
+  <div class="orc">Agente orquestador<span>Recibe, enruta y coordina a los agentes especializados de Ágora</span></div>
+  <div class="stem"></div>
+  <div class="agents-row">
+    <div class="chip"><div class="chip-inner" style="background:var(--gray-bg);color:var(--gray-tx)">Gestor de correos<small>Agente 01</small></div></div>
+    <div class="chip"><div class="chip-inner" style="background:var(--coral-bg);color:var(--coral-tx)">Operis<small>Agente 02 · Procesador</small></div></div>
+    <div class="chip"><div class="chip-inner" style="background:var(--blue-bg);color:var(--blue-tx)">Hermes<small>Agente 03 · Ponentes</small></div></div>
+    <div class="chip"><div class="chip-inner" style="background:var(--teal-bg);color:var(--teal-tx)">Lumen<small>Agente 04 · Copilot</small></div></div>
+  </div>
+</div>
+
+<div class="indep">
+  <div class="indep-label">Agente independiente — no pasa por el orquestador</div>
+  <div class="chip standalone"><div class="chip-inner" style="background:var(--pink-bg);color:var(--pink-tx)">Vigil<small>Agente 05 · Alertas concursos públicos</small></div></div>
+</div>
+
+<h3 class="section-title">Agentes especializados</h3>
+<div class="phases">
+
+  <div class="card">
+    <div class="card-head"><span class="num">01</span><span class="card-title">Gestor de correos electrónicos</span></div>
+    <p class="card-owner">Responsables: Juan, Alex</p>
+    <ul class="tasks">
+      <li><span class="badge do">Hace</span>Accede al correo, lo analiza y lo clasifica</li>
+      <li><span class="badge do">Hace</span>Clasifica si el mensaje procede de un ponente</li>
+      <li><span class="badge do">Hace</span>Extrae la información del correo y de los archivos adjuntos</li>
+      <li><span class="badge do">Hace</span>Envía la información extraída al Agente Procesador (02)</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <div class="card-head"><span class="num">02</span><span class="card-title">Operis — Procesador (Autocompletado)</span></div>
+    <p class="card-meaning">lat. "el que trabaja" — originalmente Servicios y Autocompletado</p>
+    <p class="card-owner">Responsables: Ainara, David</p>
+    <ul class="tasks">
+      <li><span class="badge human">Humano</span>Ainara y David suben los archivos a la plataforma y confirman que los datos están bien</li>
+      <li><span class="badge do">Hace</span>Recibe los documentos del evento y los analiza</li>
+      <li><span class="badge do">Hace</span>Convierte el contenido a texto plano y rellena los campos del formulario</li>
+      <li><span class="badge do">Hace</span>Guarda el link en la base de datos y los documentos en la nube</li>
+      <li><span class="badge human">Humano</span>Mitumi confirma y entonces se actualiza la base de datos</li>
+      <li><span class="badge dont">No hace</span>No guarda nada por su cuenta — enseña lo entendido, tú corriges y confirmas</li>
+      <li><span class="badge dont">No hace</span>No inventa datos: lo que no encuentra en el documento lo deja en blanco</li>
+      <li><span class="badge dont">No hace</span>No altera la base de datos en ningún caso por su cuenta</li>
+    </ul>
+    <div class="note">Es un secretario: adapta el contenido de cualquier formato al formato de la BD, pero nunca decide ni guarda solo.</div>
+  </div>
+
+  <div class="card">
+    <div class="card-head"><span class="num">03</span><span class="card-title">Hermes — Ponentes</span></div>
+    <p class="card-meaning">gr. dios mensajero de la comunicación</p>
+    <p class="card-owner">Responsables: Juan, Alex</p>
+    <div class="agent-chips"><span style="background:var(--blue-bg);color:var(--blue-tx)">Comunicación</span><span style="background:var(--blue-bg);color:var(--blue-tx)">Logística</span></div>
+    <ul class="tasks">
+      <li><span class="badge do">Hace</span>ChatBot de comunicación con el ponente vía Telegram</li>
+      <li><span class="badge do">Hace</span>Gestiona comunicación y logística con los ponentes</li>
+      <li><span class="badge do">Hace</span>Accede a la documentación de la base de datos</li>
+      <li><span class="badge do">Hace</span>Envía informe al ponente por email</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <div class="card-head"><span class="num">04</span><span class="card-title">Lumen — Copilot</span></div>
+    <p class="card-meaning">lat. "luz" — agente de consulta para el equipo de Mitumi</p>
+    <p class="card-owner">Responsables: Raúl, Eduardo</p>
+    <ul class="tasks">
+      <li><span class="badge do">Hace</span>Responde consultas del usuario sobre los datos de la plataforma</li>
+      <li><span class="badge do">Hace</span>Agente conversacional con la base de datos</li>
+      <li><span class="badge do">Hace</span>Acceso de lectura a la base de datos</li>
+      <li><span class="badge dont">No hace</span>Solo consulta — nunca escribe ni modifica la base de datos</li>
+    </ul>
+  </div>
+
+  <div class="card gap">
+    <div class="card-head"><span class="num">05</span><span class="card-title">Vigil — Alertas sobre concursos públicos</span></div>
+    <p class="card-meaning">lat. "alerta, vigilante"</p>
+    <p class="card-owner">Responsable: Roberto</p>
+    <ul class="tasks">
+      <li><span class="badge do">Hace</span>Envía mensajes de alerta sobre ofertas públicas de eventos a los que Mitumi puede optar</li>
+      <li><span class="badge do">Hace</span>Crea una pestaña dentro de la app para estas alertas</li>
+    </ul>
+    <div class="note">No depende del orquestador — funciona de forma autónoma dentro de la arquitectura.</div>
+  </div>
+
+</div>
+
+<div class="legend">
+  <div class="legend-item"><span class="badge do">Hace</span>tarea que ejecuta el agente</div>
+  <div class="legend-item"><span class="badge human">Humano</span>tarea que exige intervención de una persona</div>
+  <div class="legend-item"><span class="badge dont">No hace</span>límite explícito de su actuación</div>
+</div>
+
+</div>
+</div>
+</body>
+</html>
