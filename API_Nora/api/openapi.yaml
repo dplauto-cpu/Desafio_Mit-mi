@@ -1,0 +1,1864 @@
+# =============================================================================
+# NOTAS DE CAMBIO (revisión 2026-07-09) — para discutir con el autor original.
+# Cada cambio está marcado inline con "CAMBIO(n)" y, cuando se sustituye algo,
+# el valor original se conserva comentado con el prefijo "ORIGINAL:".
+#
+# CAMBIO(1) Autenticación: el login deja el JWT en cookie httpOnly "token"
+#   (src/controllers/auth.controller.js:23), pero el middleware activo
+#   (verifyAdmin, src/middlewares/auth.middleware.js:36) lee el header
+#   Authorization Bearer. Se documentan AMBOS esquemas (BearerAuth y
+#   CookieAuth) como alternativas. >> DISCUTIR: elegir uno y borrar el otro.
+# CAMBIO(2) /auth/login: OpenAPI ignora los parámetros llamados
+#   "Authorization"; se sustituye por un securityScheme propio (FirebaseToken).
+# CAMBIO(3) Los POST de creación devuelven 201 en el backend
+#   (res.status(201) en los controladores), no 200. DELETE se queda en 200
+#   porque el backend devuelve body.
+# CAMBIO(4) Se documentan las respuestas 401 (endpoints protegidos) y 404
+#   (endpoints /{id}) que faltaban, como respuestas reutilizables en
+#   components.responses.
+# CAMBIO(5) Se añaden esquemas tipados Evento y Cliente (copiados de los
+#   modelos Prisma en src/models/) y wrappers *Response para tipar "data".
+#   Espacio y Ponente quedan como TODO: aún no hay modelo ni ruta en backend.
+# CAMBIO(6) Las respuestas que solo tenían "description" ahora declaran
+#   content con su esquema.
+# CAMBIO(7) /upload: en el backend está protegido con verifyAdmin y las rutas
+#   reales son /upload/ponente/imagen, /upload/ponente/presentacion y
+#   /upload/documento (src/routes/upload.route.js). >> DISCUTIR: sincronizar
+#   el spec con las rutas reales.
+# NOTA(8)   Las rutas de eventos y clientes NO aplican hoy ningún middleware
+#   de autenticación en el backend, aunque el spec declara seguridad.
+#   >> DISCUTIR: aplicar verifyAdmin/authenticate o quitar security del spec.
+# CAMBIO(9) NUEVOS endpoints (PROPUESTA, aún sin implementar en backend) para
+#   el flujo del bot de Telegram del ponente:
+#     - GET  /ponentes/{id_ponente}/eventos-activos
+#     - GET  /ponentes/{id_ponente}/eventos/{id_evento}/contexto-telegram
+#     - POST /ponentes/{id_ponente}/telegram
+#     - POST /alertas-ponente
+#     - GET  /ponentes/{id_ponente}/eventos/{id_evento}/documentos
+#     - POST /ponentes/{id_ponente}/eventos/{id_evento}/documentos
+#   Incluyen esquemas nuevos: ContextoTelegram, AlertaPonente y
+#   DocumentoPonente. >> DISCUTIR: nombres de ruta, campos y auth del bot.
+#   Tras CAMBIO(10), el contexto-telegram se construye agregando la entidad
+#   Ponencia de Raúl (no hacen falta tablas nuevas de hotel/viaje).
+# CAMBIO(10) Se fusionan los endpoints de openapi_raul.yaml (v0.1.0, autor
+#   Raúl) para Lumen (Agente 04 — Copilot): /salas, /presupuestos, /estados y
+#   /ponencias. Se les aplican las convenciones de esta revisión (201 en POST,
+#   401/404 reutilizables, requestBody en PATCH, CookieAuth), conservando sus
+#   valores originales comentados como "ORIGINAL(raul)".
+#   ACORDADO: los billetes se gestionan según el modelo de Raúl — campos
+#   billete_ida_link / billete_vuelta_link de la Ponencia — y NO como
+#   DocumentoPonente: se retira "billete" del enum de documentos y el
+#   contexto-telegram los expone leyéndolos de la ponencia.
+#   NOTA: sus campos usan snake_case (nombre_sala, id_espacio) frente al
+#   camelCase de Prisma (clienteId) — >> DISCUTIR unificación de nomenclatura.
+# =============================================================================
+
+openapi: "3.0.3"
+info:
+  title: API Proyecto Tripulaciones
+  description: API backend del ERP de Eventos
+  # CAMBIO(10) — ORIGINAL: "0.0.1" (esta rama) / "0.1.0" (rama de Raúl)
+  version: "0.2.0"
+
+servers:
+  - url: http://localhost:3000/api/v1
+    description: Desarrollo local
+  # CAMBIO: añadir la URL de producción cuando exista, p. ej.:
+  # - url: https://<pendiente>/api/v1
+  #   description: Producción
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    # CAMBIO(1): el login deja el JWT en la cookie httpOnly "token";
+    # se documenta como alternativa al Bearer hasta decidir un único mecanismo.
+    CookieAuth:
+      type: apiKey
+      in: cookie
+      name: token
+    # CAMBIO(2): esquema dedicado para el token de Firebase usado en /auth/login.
+    FirebaseToken:
+      type: http
+      scheme: bearer
+      bearerFormat: Firebase ID token
+
+  # CAMBIO(4): respuestas de error reutilizables (401/404) que faltaban.
+  responses:
+    Unauthorized:
+      description: No autenticado (token ausente o inválido)
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    NotFound:
+      description: Recurso no encontrado
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+
+  schemas:
+    OkResponse:
+      type: object
+      properties:
+        ok: { type: boolean, example: true }
+        msg: { type: string, example: "Has accedido a obtener todos los eventos" }
+        filters: { type: object } # NOTA: los listados del backend devuelven "meta: { total }", no "filters" — ¿unificar?
+        data: { type: object }
+
+    ErrorResponse:
+      type: object
+      properties:
+        ok: { type: boolean, example: false }
+        msg: { type: string, example: "Evento no encontrado" }
+
+    ValidationError:
+      type: object
+      properties:
+        ok: { type: boolean, example: false }
+        msg: { type: string, example: "Error de validacion" }
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              msg: { type: string }
+              path: { type: string }
+              type: { type: string }
+
+    UUID:
+      type: string
+      format: uuid
+      example: bdfe40ca-70e8-4fe6-8907-df4a5a7bd3e6
+
+    # CAMBIO(5): esquema tipado según src/models/eventos.prisma.
+    Evento:
+      type: object
+      properties:
+        id: { $ref: "#/components/schemas/UUID" }
+        nombre: { type: string, example: "Feria de empleo tech" }
+        descripcion: { type: string, nullable: true }
+        completado: { type: boolean, default: false }
+        clienteId: { $ref: "#/components/schemas/UUID" }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
+    # CAMBIO(5): esquema tipado según src/models/clientes.prisma.
+    Cliente:
+      type: object
+      properties:
+        id: { $ref: "#/components/schemas/UUID" }
+        nombre: { type: string, example: "Acme S.L." }
+        correo: { type: string, format: email }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
+    # CAMBIO(5): wrappers para tipar "data" en las respuestas.
+    EventoResponse:
+      allOf:
+        - $ref: "#/components/schemas/OkResponse"
+        - type: object
+          properties:
+            data: { $ref: "#/components/schemas/Evento" }
+    EventoListResponse:
+      allOf:
+        - $ref: "#/components/schemas/OkResponse"
+        - type: object
+          properties:
+            data:
+              type: array
+              items: { $ref: "#/components/schemas/Evento" }
+    ClienteResponse:
+      allOf:
+        - $ref: "#/components/schemas/OkResponse"
+        - type: object
+          properties:
+            data: { $ref: "#/components/schemas/Cliente" }
+    ClienteListResponse:
+      allOf:
+        - $ref: "#/components/schemas/OkResponse"
+        - type: object
+          properties:
+            data:
+              type: array
+              items: { $ref: "#/components/schemas/Cliente" }
+    # TODO CAMBIO(5): definir esquemas Espacio y Ponente cuando existan
+    # los modelos en el backend (hoy no hay .prisma ni rutas para ellos).
+
+    # CAMBIO(9): esquemas nuevos para el flujo del bot de Telegram (PROPUESTA).
+    # Los campos son una primera aproximación — >> DISCUTIR con backend.
+    ContextoTelegram:
+      type: object
+      description: Toda la información logística que el bot envía al ponente en una sola llamada. CAMBIO(10) — se construye agregando la Ponencia de Raúl (hotel, transporte, billetes) con su sala/espacio.
+      properties:
+        hotel: # CAMBIO(10): mapea a nombre_hotel / localizacion_hotel / checkin_horario de Ponencia
+          type: object
+          properties:
+            nombre: { type: string }
+            direccion: { type: string }
+            checkIn: { type: string, format: date-time }
+            checkOut: { type: string, format: date-time }
+            confirmacion: { type: string, description: "Código de reserva" }
+        viaje: # CAMBIO(10): mapea a nota_transporte / horario_ida_transporte / horario_vuelta_transporte de Ponencia
+          type: object
+          properties:
+            medio: { type: string, example: "tren" }
+            origen: { type: string }
+            destino: { type: string }
+            salida: { type: string, format: date-time }
+            llegada: { type: string, format: date-time }
+            localizador: { type: string }
+        # CAMBIO(10) — ACORDADO: los billetes se exponen desde la Ponencia
+        # (billete_ida_link / billete_vuelta_link, modelo de Raúl); NO son
+        # DocumentoPonente.
+        billetes:
+          type: object
+          properties:
+            ida: { type: string, format: uri, description: "billete_ida_link de la ponencia" }
+            vuelta: { type: string, format: uri, description: "billete_vuelta_link de la ponencia" }
+        taxi:
+          type: object
+          properties:
+            recogida: { type: string, format: date-time }
+            lugar: { type: string }
+            contacto: { type: string }
+        horario:
+          type: array
+          description: Agenda del ponente dentro del evento
+          items:
+            type: object
+            properties:
+              hora: { type: string, format: date-time }
+              actividad: { type: string }
+        lugar:
+          type: object
+          properties:
+            nombre: { type: string }
+            direccion: { type: string }
+            sala: { type: string }
+        documentacion:
+          type: array
+          description: Documentos del ponente, sin contar billetes (ver CAMBIO(10))
+          items: { $ref: "#/components/schemas/DocumentoPonente" }
+        timeline:
+          type: array
+          description: Hitos ordenados del evento para el ponente
+          items:
+            type: object
+            properties:
+              fecha: { type: string, format: date-time }
+              hito: { type: string }
+
+    # CAMBIO(9)
+    AlertaPonente:
+      type: object
+      properties:
+        id: { $ref: "#/components/schemas/UUID" }
+        ponenteId: { $ref: "#/components/schemas/UUID" }
+        eventoId: { $ref: "#/components/schemas/UUID" }
+        tipo:
+          type: string
+          enum: [urgencia, incidencia, consulta]
+        mensaje: { type: string }
+        estado:
+          type: string
+          enum: [abierta, en_curso, resuelta]
+          default: abierta
+        createdAt: { type: string, format: date-time }
+
+    # CAMBIO(9)
+    DocumentoPonente:
+      type: object
+      properties:
+        id: { $ref: "#/components/schemas/UUID" }
+        tipo:
+          type: string
+          # CAMBIO(10) — ORIGINAL: enum: [billete, agenda, presentacion, otro]
+          # ACORDADO: los billetes se gestionan en la Ponencia (billete_*_link, modelo de Raúl).
+          enum: [agenda, presentacion, otro]
+        nombre: { type: string, example: "agenda-evento.pdf" }
+        url:
+          type: string
+          format: uri
+          description: URL devuelta por /upload (Cloudinary)
+        origen:
+          type: string
+          enum: [telegram, panel]
+          default: telegram
+        createdAt: { type: string, format: date-time }
+
+paths:
+  /health:
+    get:
+      tags: [Health]
+      summary: Health check
+      security: [] # CAMBIO(4): se marca explícitamente como endpoint público
+      responses:
+        "200":
+          description: Servidor operativo
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OkResponse"
+
+  # NOTA: excluir este endpoint del spec/despliegue de producción.
+  /debug/force-error:
+    get:
+      tags: [Debug]
+      summary: Fuerza un error (solo development)
+      security: [] # CAMBIO(4): se marca explícitamente como endpoint público
+      responses:
+        "500":
+          description: Error interno simulado
+
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Iniciar sesión con Firebase
+      # CAMBIO(2): OpenAPI ignora los parámetros de header llamados
+      # "Authorization"; se modela con el securityScheme FirebaseToken.
+      # ORIGINAL:
+      # parameters:
+      #   - in: header
+      #     name: Authorization
+      #     required: true
+      #     schema: { type: string }
+      #     example: "Bearer <firebase_id_token>"
+      security:
+        - FirebaseToken: []
+      responses:
+        "200":
+          description: Sesión iniciada, JWT en cookie httpOnly
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+                  user:
+                    type: object
+                    properties:
+                      userId: { type: string }
+                      name: { type: string }
+                      email: { type: string }
+                      role: { type: string }
+        "400":
+          description: Token no enviado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Token inválido
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/verify:
+    get:
+      tags: [Auth]
+      summary: Verificar sesión activa
+      security: # CAMBIO(1): la verificación se hace contra la cookie de sesión
+        - CookieAuth: []
+      responses:
+        "200":
+          description: Sesión válida
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OkResponse"
+        "401":
+          description: No autenticado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/logout:
+    post:
+      tags: [Auth]
+      summary: Cerrar sesión
+      security: # CAMBIO(1): el logout limpia la cookie de sesión
+        - CookieAuth: []
+      responses:
+        "200":
+          description: Sesión cerrada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OkResponse"
+
+  # CAMBIO(7): las rutas reales del backend son /upload/ponente/imagen,
+  # /upload/ponente/presentacion y /upload/documento, todas con verifyAdmin.
+  # >> DISCUTIR: sincronizar el spec con src/routes/upload.route.js.
+  /upload:
+    post:
+      tags: [Upload]
+      summary: Subir archivo a Cloudinary
+      security: # CAMBIO(7): en el backend está protegido (verifyAdmin); antes no declaraba security
+        - BearerAuth: []
+        - CookieAuth: [] # CAMBIO(1)
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: Archivo a subir (jpg, png, gif, pdf, ppt, doc, hasta 10MB)
+      responses:
+        "200":
+          description: Archivo subido
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+                  file:
+                    type: object
+                    properties:
+                      filename: { type: string }
+                      originalname: { type: string }
+                      path: { type: string }
+                      size: { type: number }
+                      mimetype: { type: string }
+        "401": # CAMBIO(4)
+          $ref: "#/components/responses/Unauthorized"
+
+  # NOTA(8): en el backend estas rutas NO aplican hoy ningún middleware de
+  # autenticación (src/routes/evento.routes.js) — ver nota de cabecera.
+  /eventos:
+    get:
+      tags: [Eventos]
+      summary: Listar/filtrar eventos
+      security:
+        - BearerAuth: []
+        - CookieAuth: [] # CAMBIO(1)
+      parameters:
+        - in: query
+          name: ciudad
+          schema: { type: string }
+        - in: query
+          name: tipo_evento
+          schema: { type: string }
+        - in: query
+          name: estado
+          schema: { type: string }
+      responses:
+        "200":
+          description: Lista de eventos
+          content:
+            application/json:
+              schema:
+                # CAMBIO(5) — ORIGINAL: $ref: "#/components/schemas/OkResponse"
+                $ref: "#/components/schemas/EventoListResponse"
+        "401": # CAMBIO(4)
+          $ref: "#/components/responses/Unauthorized"
+
+    post:
+      tags: [Eventos]
+      summary: Crear evento
+      security:
+        - BearerAuth: []
+        - CookieAuth: [] # CAMBIO(1)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [nombre]
+              properties:
+                nombre: { type: string }
+                # CAMBIO(5): campos según el modelo Prisma; antes solo "nombre".
+                descripcion: { type: string }
+                completado: { type: boolean }
+                clienteId: { $ref: "#/components/schemas/UUID" }
+      responses:
+        # CAMBIO(3) — ORIGINAL: "200":
+        "201":
+          description: Evento creado
+          content:
+            application/json:
+              schema:
+                # CAMBIO(5) — ORIGINAL: $ref: "#/components/schemas/OkResponse"
+                $ref: "#/components/schemas/EventoResponse"
+        "400":
+          description: Error de validación
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ValidationError"
+        "401": # CAMBIO(4)
+          $ref: "#/components/responses/Unauthorized"
+
+  /eventos/{id}:
+    get:
+      tags: [Eventos]
+      summary: Obtener evento por ID
+      security:
+        - BearerAuth: []
+        - CookieAuth: [] # CAMBIO(1)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: Evento encontrado
+          content:
+            application/json:
+              schema:
+                # CAMBIO(5) — ORIGINAL: $ref: "#/components/schemas/OkResponse"
+                $ref: "#/components/schemas/EventoResponse"
+        "401": # CAMBIO(4)
+          $ref: "#/components/responses/Unauthorized"
+        "404": # CAMBIO(4)
+          $ref: "#/components/responses/NotFound"
+
+    patch:
+      tags: [Eventos]
+      summary: Actualizar evento
+      security:
+        - BearerAuth: []
+        - CookieAuth: [] # CAMBIO(1)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      # CAMBIO(5): faltaba el requestBody del PATCH (no se documentaba qué campos acepta).
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                nombre: { type: string }
+                descripcion: { type: string }
+                completado: { type: boolean }
+                clienteId: { $ref: "#/components/schemas/UUID" }
+      responses:
+        "200":
+          description: Evento actualizado
+          content:
+            application/json:
+              schema:
+                # CAMBIO(5) — ORIGINAL: $ref: "#/components/schemas/OkResponse"
+                $ref: "#/components/schemas/EventoResponse"
+        "401": # CAMBIO(4)
+          $ref: "#/components/responses/Unauthorized"
+        "404": # CAMBIO(4)
+          $ref: "#/components/responses/NotFound"
+
+    delete:
+      tags: [Eventos]
+      summary: Eliminar evento
+      security:
+        - BearerAuth: []
+        - CookieAuth: [] # CAMBIO(1)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: Evento eliminado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OkResponse"
+        "401": # CAMBIO(4)
+          $ref: "#/components/responses/Unauthorized"
+        "404": # CAMBIO(4)
+          $ref: "#/components/responses/NotFound"
+
+  # NOTA(8): igual que eventos, sin middleware de auth en el backend hoy.
+  /clientes:
+    get:
+      tags: [Clientes]
+      summary: Listar/filtrar clientes
+      security:
+        - BearerAuth: []
+        - CookieAuth: [] # CAMBIO(1)
+      parameters:
+        - in: query
+          name: sector
+          schema: { type: string }
+        - in: query
+          name: ciudad
+          schema: { type: string }
+      responses:
+        "200":
+          description: Lista de clientes
+          content:
+            application/json:
+              schema:
+                # CAMBIO(5) — ORIGINAL: $ref: "#/components/schemas/OkResponse"
+                $ref: "#/components/schemas/ClienteListResponse"
+        "401": # CAMBIO(4)
+          $ref: "#/components/responses/Unauthorized"
+
+    post:
+      tags: [Clientes]
+      summary: Crear cliente
+      security:
+        - BearerAuth: []
+        - CookieAuth: [] # CAMBIO(1)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [nombre, correo]
+              properties:
+                nombre: { type: string }
+                correo: { type: string, format: email }
+      responses:
+        # CAMBIO(3) — ORIGINAL: "200":
+        "201":
+          description: Cliente creado
+          content:
+            application/json:
+              schema:
+                # CAMBIO(5) — ORIGINAL: $ref: "#/components/schemas/OkResponse"
+                $ref: "#/components/schemas/ClienteResponse"
+        "400": # CAMBIO(4): faltaba (el POST valida nombre y correo)
+          description: Error de validación
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ValidationError"
+        "401": # CAMBIO(4)
+          $ref: "#/components/responses/Unauthorized"
+
+  /clientes/{id}:
+    get:
+      tags: [Clientes]
+      summary: Obtener cliente por ID
+      security:
+        - BearerAuth: []
+        - CookieAuth: [] # CAMBIO(1)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: Cliente encontrado
+          content: # CAMBIO(6): faltaba el content de la respuesta
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClienteResponse"
+        "401": # CAMBIO(4)
+          $ref: "#/components/responses/Unauthorized"
+        "404": # CAMBIO(4)
+          $ref: "#/components/responses/NotFound"
+
+    patch:
+      tags: [Clientes]
+      summary: Actualizar cliente
+      security:
+        - BearerAuth: []
+        - CookieAuth: [] # CAMBIO(1)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      # CAMBIO(5): faltaba el requestBody del PATCH.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                nombre: { type: string }
+                correo: { type: string, format: email }
+      responses:
+        "200":
+          description: Cliente actualizado
+          content: # CAMBIO(6): faltaba el content de la respuesta
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClienteResponse"
+        "401": # CAMBIO(4)
+          $ref: "#/components/responses/Unauthorized"
+        "404": # CAMBIO(4)
+          $ref: "#/components/responses/NotFound"
+
+    delete:
+      tags: [Clientes]
+      summary: Eliminar cliente
+      security:
+        - BearerAuth: []
+        - CookieAuth: [] # CAMBIO(1)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: Cliente eliminado
+          content: # CAMBIO(6): faltaba el content de la respuesta
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OkResponse"
+        "401": # CAMBIO(4)
+          $ref: "#/components/responses/Unauthorized"
+        "404": # CAMBIO(4)
+          $ref: "#/components/responses/NotFound"
+
+  # NOTA CAMBIO(5): "Espacios" todavía no existe en el backend (ni modelo
+  # Prisma ni ruta); las respuestas usan el OkResponse genérico hasta entonces.
+  /espacios:
+    get:
+      tags: [Espacios]
+      summary: Listar/filtrar espacios
+      security:
+        - BearerAuth: []
+        - CookieAuth: [] # CAMBIO(1)
+      parameters:
+        - in: query
+          name: ciudad
+          schema: { type: string }
+        - in: query
+          name: aforo
+          schema: { type: integer, minimum: 0 }
+      responses:
+        "200":
+          description: Lista de espacios
+          content: # CAMBIO(6): faltaba el content de la respuesta
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OkResponse"
+        "401": # CAMBIO(4)
+          $ref: "#/components/responses/Unauthorized"
+
+    post:
+      tags: [Espacios]
+      summary: Crear espacio
+      security:
+        - BearerAuth: []
+        - CookieAuth: [] # CAMBIO(1)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [nombre]
+              properties:
+                nombre: { type: string }
+      responses:
+        # CAMBIO(3) — ORIGINAL: "200":
+        "201":
+          description: Espacio creado
+          content: # CAMBIO(6): faltaba el content de la respuesta
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OkResponse"
+        "401": # CAMBIO(4)
+          $ref: "#/components/responses/Unauthorized"
+
+  /espacios/{id}:
+    get:
+      tags: [Espacios]
+      summary: Obtener espacio por ID
+      security:
+        - BearerAuth: []
+        - CookieAuth: [] # CAMBIO(1)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: Espacio encontrado
+          content: # CAMBIO(6): faltaba el content de la respuesta
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OkResponse"
+        "401": # CAMBIO(4)
+          $ref: "#/components/responses/Unauthorized"
+        "404": # CAMBIO(4)
+          $ref: "#/components/responses/NotFound"
+
+    patch:
+      tags: [Espacios]
+      summary: Actualizar espacio
+      security:
+        - BearerAuth: []
+        - CookieAuth: [] # CAMBIO(1)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      # CAMBIO(5): faltaba el requestBody del PATCH.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                nombre: { type: string }
+      responses:
+        "200":
+          description: Espacio actualizado
+          content: # CAMBIO(6): faltaba el content de la respuesta
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OkResponse"
+        "401": # CAMBIO(4)
+          $ref: "#/components/responses/Unauthorized"
+        "404": # CAMBIO(4)
+          $ref: "#/components/responses/NotFound"
+
+    delete:
+      tags: [Espacios]
+      summary: Eliminar espacio
+      security:
+        - BearerAuth: []
+        - CookieAuth: [] # CAMBIO(1)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: Espacio eliminado
+          content: # CAMBIO(6): faltaba el content de la respuesta
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OkResponse"
+        "401": # CAMBIO(4)
+          $ref: "#/components/responses/Unauthorized"
+        "404": # CAMBIO(4)
+          $ref: "#/components/responses/NotFound"
+
+  # NOTA CAMBIO(5): "Ponentes" todavía no existe en el backend (ni modelo
+  # Prisma ni ruta); las respuestas usan el OkResponse genérico hasta entonces.
+  /ponentes:
+    get:
+      tags: [Ponentes]
+      summary: Listar/filtrar ponentes
+      security:
+        - BearerAuth: []
+        - CookieAuth: [] # CAMBIO(1)
+      parameters:
+        - in: query
+          name: sector
+          schema: { type: string }
+      responses:
+        "200":
+          description: Lista de ponentes
+          content: # CAMBIO(6): faltaba el content de la respuesta
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OkResponse"
+        "401": # CAMBIO(4)
+          $ref: "#/components/responses/Unauthorized"
+
+    post:
+      tags: [Ponentes]
+      summary: Crear ponente (con foto)
+      security:
+        - BearerAuth: []
+        - CookieAuth: [] # CAMBIO(1)
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [nombre]
+              properties:
+                nombre:
+                  type: string
+                  description: Nombre del ponente
+                file:
+                  type: string
+                  format: binary
+                  description: Foto de perfil (opcional)
+      responses:
+        # CAMBIO(3) — ORIGINAL: "200":
+        "201":
+          description: Ponente creado
+          content: # CAMBIO(6): faltaba el content de la respuesta
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OkResponse"
+        "401": # CAMBIO(4)
+          $ref: "#/components/responses/Unauthorized"
+
+  /ponentes/{id}:
+    get:
+      tags: [Ponentes]
+      summary: Obtener ponente por ID
+      security:
+        - BearerAuth: []
+        - CookieAuth: [] # CAMBIO(1)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: Ponente encontrado
+          content: # CAMBIO(6): faltaba el content de la respuesta
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OkResponse"
+        "401": # CAMBIO(4)
+          $ref: "#/components/responses/Unauthorized"
+        "404": # CAMBIO(4)
+          $ref: "#/components/responses/NotFound"
+
+    patch:
+      tags: [Ponentes]
+      summary: Actualizar ponente (con foto)
+      security:
+        - BearerAuth: []
+        - CookieAuth: [] # CAMBIO(1)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                nombre:
+                  type: string
+                file:
+                  type: string
+                  format: binary
+                  description: Nueva foto de perfil (opcional)
+      responses:
+        "200":
+          description: Ponente actualizado
+          content: # CAMBIO(6): faltaba el content de la respuesta
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OkResponse"
+        "401": # CAMBIO(4)
+          $ref: "#/components/responses/Unauthorized"
+        "404": # CAMBIO(4)
+          $ref: "#/components/responses/NotFound"
+
+    delete:
+      tags: [Ponentes]
+      summary: Eliminar ponente
+      security:
+        - BearerAuth: []
+        - CookieAuth: [] # CAMBIO(1)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: Ponente eliminado
+          content: # CAMBIO(6): faltaba el content de la respuesta
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OkResponse"
+        "401": # CAMBIO(4)
+          $ref: "#/components/responses/Unauthorized"
+        "404": # CAMBIO(4)
+          $ref: "#/components/responses/NotFound"
+
+  # ===========================================================================
+  # CAMBIO(9): NUEVOS endpoints para el bot de Telegram del ponente (PROPUESTA,
+  # aún sin implementar en el backend). Se asume que el bot se autentica con
+  # Bearer (token de servicio) — >> DISCUTIR el mecanismo de auth del bot.
+  # ===========================================================================
+
+  /ponentes/{id_ponente}/eventos-activos:
+    get:
+      tags: [Telegram]
+      summary: Eventos activos en los que participa un ponente
+      description: "CAMBIO(10): puede resolverse como agregación de GET /ponencias?id_ponente=... — >> DISCUTIR si se mantiene como endpoint propio."
+      security:
+        - BearerAuth: []
+        - CookieAuth: [] # CAMBIO(1)
+      parameters:
+        - in: path
+          name: id_ponente
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: Lista de eventos activos del ponente
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EventoListResponse"
+        "401": # CAMBIO(4)
+          $ref: "#/components/responses/Unauthorized"
+        "404": # CAMBIO(4)
+          $ref: "#/components/responses/NotFound"
+
+  /ponentes/{id_ponente}/eventos/{id_evento}/contexto-telegram:
+    get:
+      tags: [Telegram]
+      summary: Contexto completo del ponente en un evento (hotel, viaje, billetes, taxi, horario, lugar, documentación y timeline) en una sola llamada
+      description: "CAMBIO(10): vista compuesta que agrega la Ponencia de Raúl (hotel, transporte, billetes) con su sala y espacio — no requiere tablas nuevas."
+      security:
+        - BearerAuth: []
+        - CookieAuth: [] # CAMBIO(1)
+      parameters:
+        - in: path
+          name: id_ponente
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+        - in: path
+          name: id_evento
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: Contexto logístico del ponente para el evento
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/OkResponse"
+                  - type: object
+                    properties:
+                      data: { $ref: "#/components/schemas/ContextoTelegram" }
+        "401": # CAMBIO(4)
+          $ref: "#/components/responses/Unauthorized"
+        "404": # CAMBIO(4)
+          $ref: "#/components/responses/NotFound"
+
+  /ponentes/{id_ponente}/telegram:
+    post:
+      tags: [Telegram]
+      summary: Registrar el telegram_chat_id del ponente y activar el bot
+      security:
+        - BearerAuth: []
+        - CookieAuth: [] # CAMBIO(1)
+      parameters:
+        - in: path
+          name: id_ponente
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [telegram_chat_id]
+              properties:
+                telegram_chat_id:
+                  type: string
+                  example: "987654321"
+                activo:
+                  type: boolean
+                  default: true
+                  description: Permite desactivar el bot sin borrar el chat_id
+      responses:
+        "201": # CAMBIO(3): creación → 201, como el resto de POST
+          description: Bot de Telegram activado para el ponente
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OkResponse"
+        "400":
+          description: Error de validación
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ValidationError"
+        "401": # CAMBIO(4)
+          $ref: "#/components/responses/Unauthorized"
+        "404": # CAMBIO(4)
+          $ref: "#/components/responses/NotFound"
+
+  /alertas-ponente:
+    post:
+      tags: [Telegram]
+      summary: Registrar una urgencia o incidencia comunicada por el ponente
+      security:
+        - BearerAuth: []
+        - CookieAuth: [] # CAMBIO(1)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [ponenteId, tipo, mensaje]
+              properties:
+                ponenteId: { $ref: "#/components/schemas/UUID" }
+                eventoId: { $ref: "#/components/schemas/UUID" }
+                tipo:
+                  type: string
+                  enum: [urgencia, incidencia, consulta]
+                mensaje:
+                  type: string
+                  example: "He perdido el tren, llegaré 1h tarde"
+      responses:
+        "201": # CAMBIO(3): creación → 201
+          description: Alerta registrada
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/OkResponse"
+                  - type: object
+                    properties:
+                      data: { $ref: "#/components/schemas/AlertaPonente" }
+        "400":
+          description: Error de validación
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ValidationError"
+        "401": # CAMBIO(4)
+          $ref: "#/components/responses/Unauthorized"
+
+  /ponentes/{id_ponente}/eventos/{id_evento}/documentos:
+    get:
+      tags: [Telegram]
+      # CAMBIO(10) — ORIGINAL: el summary incluía "billete"; ACORDADO que los
+      # billetes van en la Ponencia (billete_ida_link / billete_vuelta_link).
+      summary: Documentos disponibles del ponente para un evento (agenda, presentación, etc.)
+      security:
+        - BearerAuth: []
+        - CookieAuth: [] # CAMBIO(1)
+      parameters:
+        - in: path
+          name: id_ponente
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+        - in: path
+          name: id_evento
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+        - in: query
+          name: tipo
+          schema:
+            type: string
+            # CAMBIO(10) — ORIGINAL: enum: [billete, agenda, presentacion, otro]
+            enum: [agenda, presentacion, otro]
+      responses:
+        "200":
+          description: Lista de documentos del ponente en el evento
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/OkResponse"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: "#/components/schemas/DocumentoPonente" }
+        "401": # CAMBIO(4)
+          $ref: "#/components/responses/Unauthorized"
+        "404": # CAMBIO(4)
+          $ref: "#/components/responses/NotFound"
+
+    post:
+      tags: [Telegram]
+      summary: Registrar un documento enviado por Telegram (tras subirlo con /upload)
+      description: El flujo es en dos pasos — primero se sube el fichero con /upload y después se registra aquí la URL devuelta. CAMBIO(10) — ACORDADO — los billetes NO se registran aquí; se actualizan en la Ponencia (billete_ida_link / billete_vuelta_link) vía PATCH /ponencias/{id}.
+      security:
+        - BearerAuth: []
+        - CookieAuth: [] # CAMBIO(1)
+      parameters:
+        - in: path
+          name: id_ponente
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+        - in: path
+          name: id_evento
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [tipo, url]
+              properties:
+                tipo:
+                  type: string
+                  # CAMBIO(10) — ORIGINAL: enum: [billete, agenda, presentacion, otro]
+                  enum: [agenda, presentacion, otro]
+                nombre: { type: string }
+                url:
+                  type: string
+                  format: uri
+                  description: URL devuelta por /upload (Cloudinary)
+                origen:
+                  type: string
+                  enum: [telegram, panel]
+                  default: telegram
+      responses:
+        "201": # CAMBIO(3): creación → 201
+          description: Documento registrado
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/OkResponse"
+                  - type: object
+                    properties:
+                      data: { $ref: "#/components/schemas/DocumentoPonente" }
+        "400":
+          description: Error de validación
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ValidationError"
+        "401": # CAMBIO(4)
+          $ref: "#/components/responses/Unauthorized"
+        "404": # CAMBIO(4)
+          $ref: "#/components/responses/NotFound"
+
+  # ===========================================================================
+  # CAMBIO(10): endpoints fusionados desde openapi_raul.yaml (autor: Raúl,
+  # v0.1.0). Propósito original, en palabras de Raúl:
+  #   "endpoints nuevos, necesarios para que Lumen (Agente 04 - Copilot de
+  #   consulta) pueda resolver el contexto completo de un evento (sala,
+  #   espacio, presupuesto, estado legible y ponente via su ponencia) sin
+  #   depender de data/mock/*.json. Campos y relaciones tomados de
+  #   data/rag/documentos/esquema_bd.md (Lumen)."
+  # Al fusionar se aplican las convenciones de esta revisión — 201 en POST
+  # (CAMBIO 3), 401/404 reutilizables (CAMBIO 4), requestBody en PATCH
+  # (CAMBIO 5), CookieAuth (CAMBIO 1) — conservando los valores originales
+  # comentados como "ORIGINAL(raul)".
+  # NOTA: los campos usan snake_case (nombre_sala, id_espacio) frente al
+  # camelCase de Prisma — >> DISCUTIR unificación de nomenclatura.
+  # ===========================================================================
+
+  /salas:
+    get:
+      tags: [Salas]
+      summary: Listar/filtrar salas
+      security:
+        - BearerAuth: []
+        - CookieAuth: [] # CAMBIO(1)
+      parameters:
+        - in: query
+          name: tipo_sala
+          schema: { type: string }
+        - in: query
+          name: id_espacio
+          schema:
+            $ref: "#/components/schemas/UUID"
+        - in: query
+          name: capacidad_max_sala
+          schema: { type: integer, minimum: 0 }
+      responses:
+        "200":
+          description: Lista de salas
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OkResponse"
+        "401": # CAMBIO(4)
+          $ref: "#/components/responses/Unauthorized"
+
+    post:
+      tags: [Salas]
+      summary: Crear sala
+      security:
+        - BearerAuth: []
+        - CookieAuth: [] # CAMBIO(1)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [nombre_sala, id_espacio]
+              properties:
+                nombre_sala: { type: string }
+                tipo_sala: { type: string }
+                capacidad_max_sala: { type: integer, minimum: 0 }
+                nota_sala: { type: string }
+                id_espacio:
+                  $ref: "#/components/schemas/UUID"
+      responses:
+        # CAMBIO(3) — ORIGINAL(raul): "200":
+        "201":
+          description: Sala creada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OkResponse"
+        "400":
+          description: Error de validación
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ValidationError"
+        "401": # CAMBIO(4)
+          $ref: "#/components/responses/Unauthorized"
+
+  /salas/{id}:
+    get:
+      tags: [Salas]
+      summary: Obtener sala por ID
+      security:
+        - BearerAuth: []
+        - CookieAuth: [] # CAMBIO(1)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: Sala encontrada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OkResponse"
+        "401": # CAMBIO(4)
+          $ref: "#/components/responses/Unauthorized"
+        # CAMBIO(4) — ORIGINAL(raul): 404 inline con ErrorResponse; unificado con la respuesta reutilizable
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+    patch:
+      tags: [Salas]
+      summary: Actualizar sala
+      security:
+        - BearerAuth: []
+        - CookieAuth: [] # CAMBIO(1)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      # CAMBIO(5): faltaba el requestBody del PATCH (mismos campos que el POST).
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                nombre_sala: { type: string }
+                tipo_sala: { type: string }
+                capacidad_max_sala: { type: integer, minimum: 0 }
+                nota_sala: { type: string }
+                id_espacio:
+                  $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: Sala actualizada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OkResponse"
+        "401": # CAMBIO(4)
+          $ref: "#/components/responses/Unauthorized"
+        "404": # CAMBIO(4)
+          $ref: "#/components/responses/NotFound"
+
+    delete:
+      tags: [Salas]
+      summary: Eliminar sala
+      security:
+        - BearerAuth: []
+        - CookieAuth: [] # CAMBIO(1)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: Sala eliminada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OkResponse"
+        "401": # CAMBIO(4)
+          $ref: "#/components/responses/Unauthorized"
+        "404": # CAMBIO(4)
+          $ref: "#/components/responses/NotFound"
+
+  /presupuestos:
+    get:
+      tags: [Presupuestos]
+      summary: Listar/filtrar presupuestos
+      security:
+        - BearerAuth: []
+        - CookieAuth: [] # CAMBIO(1)
+      parameters:
+        - in: query
+          name: estado_presupuesto
+          schema: { type: boolean }
+      responses:
+        "200":
+          description: Lista de presupuestos
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OkResponse"
+        "401": # CAMBIO(4)
+          $ref: "#/components/responses/Unauthorized"
+
+    post:
+      tags: [Presupuestos]
+      summary: Crear presupuesto
+      security:
+        - BearerAuth: []
+        - CookieAuth: [] # CAMBIO(1)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [total]
+              properties:
+                estado_presupuesto: { type: boolean }
+                total: { type: number, format: double }
+                fecha: { type: string, format: date }
+                nota_ubicacion: { type: string }
+                precio_ubicacion: { type: number, format: double }
+                catering: { type: boolean }
+                nota_catering: { type: string }
+                precio_catering: { type: number, format: double }
+                audiovisuales: { type: boolean }
+                nota_audiovisuales: { type: string }
+                precio_audiovisuales: { type: number, format: double }
+                otros: { type: boolean }
+                nota_otros: { type: string }
+                precio_otros: { type: number, format: double }
+      responses:
+        # CAMBIO(3) — ORIGINAL(raul): "200":
+        "201":
+          description: Presupuesto creado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OkResponse"
+        "400":
+          description: Error de validación
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ValidationError"
+        "401": # CAMBIO(4)
+          $ref: "#/components/responses/Unauthorized"
+
+  /presupuestos/{id}:
+    get:
+      tags: [Presupuestos]
+      summary: Obtener presupuesto por ID
+      security:
+        - BearerAuth: []
+        - CookieAuth: [] # CAMBIO(1)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: Presupuesto encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OkResponse"
+        "401": # CAMBIO(4)
+          $ref: "#/components/responses/Unauthorized"
+        # CAMBIO(4) — ORIGINAL(raul): 404 inline con ErrorResponse; unificado con la respuesta reutilizable
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+    patch:
+      tags: [Presupuestos]
+      summary: Actualizar presupuesto
+      security:
+        - BearerAuth: []
+        - CookieAuth: [] # CAMBIO(1)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      # CAMBIO(5): faltaba el requestBody del PATCH (mismos campos que el POST).
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                estado_presupuesto: { type: boolean }
+                total: { type: number, format: double }
+                fecha: { type: string, format: date }
+                nota_ubicacion: { type: string }
+                precio_ubicacion: { type: number, format: double }
+                catering: { type: boolean }
+                nota_catering: { type: string }
+                precio_catering: { type: number, format: double }
+                audiovisuales: { type: boolean }
+                nota_audiovisuales: { type: string }
+                precio_audiovisuales: { type: number, format: double }
+                otros: { type: boolean }
+                nota_otros: { type: string }
+                precio_otros: { type: number, format: double }
+      responses:
+        "200":
+          description: Presupuesto actualizado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OkResponse"
+        "401": # CAMBIO(4)
+          $ref: "#/components/responses/Unauthorized"
+        "404": # CAMBIO(4)
+          $ref: "#/components/responses/NotFound"
+
+    delete:
+      tags: [Presupuestos]
+      summary: Eliminar presupuesto
+      security:
+        - BearerAuth: []
+        - CookieAuth: [] # CAMBIO(1)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: Presupuesto eliminado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OkResponse"
+        "401": # CAMBIO(4)
+          $ref: "#/components/responses/Unauthorized"
+        "404": # CAMBIO(4)
+          $ref: "#/components/responses/NotFound"
+
+  /estados:
+    get:
+      tags: [Estados]
+      summary: Listar los estados posibles de un evento
+      security:
+        - BearerAuth: []
+        - CookieAuth: [] # CAMBIO(1)
+      responses:
+        "200":
+          description: Lista de estados
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OkResponse"
+        "401": # CAMBIO(4)
+          $ref: "#/components/responses/Unauthorized"
+
+    post:
+      tags: [Estados]
+      summary: Crear estado
+      security:
+        - BearerAuth: []
+        - CookieAuth: [] # CAMBIO(1)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [descripcion]
+              properties:
+                descripcion: { type: string }
+      responses:
+        # CAMBIO(3) — ORIGINAL(raul): "200":
+        "201":
+          description: Estado creado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OkResponse"
+        "400":
+          description: Error de validación
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ValidationError"
+        "401": # CAMBIO(4)
+          $ref: "#/components/responses/Unauthorized"
+
+  # NOTA CAMBIO(10): la versión de Raúl no define PATCH para /estados/{id}
+  # (solo GET y DELETE) — ¿intencionado por ser un catálogo? >> DISCUTIR.
+  /estados/{id}:
+    get:
+      tags: [Estados]
+      summary: Obtener estado por ID
+      security:
+        - BearerAuth: []
+        - CookieAuth: [] # CAMBIO(1)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: Estado encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OkResponse"
+        "401": # CAMBIO(4)
+          $ref: "#/components/responses/Unauthorized"
+        # CAMBIO(4) — ORIGINAL(raul): 404 inline con ErrorResponse; unificado con la respuesta reutilizable
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+    delete:
+      tags: [Estados]
+      summary: Eliminar estado
+      security:
+        - BearerAuth: []
+        - CookieAuth: [] # CAMBIO(1)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: Estado eliminado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OkResponse"
+        "401": # CAMBIO(4)
+          $ref: "#/components/responses/Unauthorized"
+        "404": # CAMBIO(4)
+          $ref: "#/components/responses/NotFound"
+
+  /ponencias:
+    get:
+      tags: [Ponencias]
+      summary: Listar/filtrar ponencias
+      security:
+        - BearerAuth: []
+        - CookieAuth: [] # CAMBIO(1)
+      parameters:
+        - in: query
+          name: id_ponente
+          schema:
+            $ref: "#/components/schemas/UUID"
+        - in: query
+          name: tipo_ponencia
+          schema: { type: string }
+        - in: query
+          name: ponente_estado
+          schema: { type: string }
+      responses:
+        "200":
+          description: Lista de ponencias
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OkResponse"
+        "401": # CAMBIO(4)
+          $ref: "#/components/responses/Unauthorized"
+
+    post:
+      tags: [Ponencias]
+      summary: Crear ponencia
+      security:
+        - BearerAuth: []
+        - CookieAuth: [] # CAMBIO(1)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [id_ponente]
+              properties:
+                nombre_hotel: { type: string }
+                nota_transporte: { type: string }
+                horario_ida_transporte: { type: string, format: date-time }
+                horario_vuelta_transporte: { type: string, format: date-time }
+                localizacion_hotel: { type: string }
+                horario_ponencia: { type: string, format: date-time }
+                checkin_horario: { type: string, format: date-time }
+                ponente_estado: { type: string }
+                presentacion_link: { type: string }
+                # CAMBIO(10) — ACORDADO: los billetes del ponente viven aquí
+                # (modelo de Raúl), NO como DocumentoPonente.
+                billete_ida_link: { type: string }
+                billete_vuelta_link: { type: string }
+                tipo_ponencia: { type: string }
+                id_ponente:
+                  $ref: "#/components/schemas/UUID"
+      responses:
+        # CAMBIO(3) — ORIGINAL(raul): "200":
+        "201":
+          description: Ponencia creada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OkResponse"
+        "400":
+          description: Error de validación
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ValidationError"
+        "401": # CAMBIO(4)
+          $ref: "#/components/responses/Unauthorized"
+
+  /ponencias/{id}:
+    get:
+      tags: [Ponencias]
+      summary: Obtener ponencia por ID
+      security:
+        - BearerAuth: []
+        - CookieAuth: [] # CAMBIO(1)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: Ponencia encontrada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OkResponse"
+        "401": # CAMBIO(4)
+          $ref: "#/components/responses/Unauthorized"
+        # CAMBIO(4) — ORIGINAL(raul): 404 inline con ErrorResponse; unificado con la respuesta reutilizable
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+    patch:
+      tags: [Ponencias]
+      summary: Actualizar ponencia (incluye billetes — ver CAMBIO(10))
+      security:
+        - BearerAuth: []
+        - CookieAuth: [] # CAMBIO(1)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      # CAMBIO(5): faltaba el requestBody del PATCH (mismos campos que el POST).
+      # CAMBIO(10) — ACORDADO: este PATCH es la vía para actualizar los billetes
+      # del ponente (billete_ida_link / billete_vuelta_link), tras subir el
+      # fichero con /upload.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                nombre_hotel: { type: string }
+                nota_transporte: { type: string }
+                horario_ida_transporte: { type: string, format: date-time }
+                horario_vuelta_transporte: { type: string, format: date-time }
+                localizacion_hotel: { type: string }
+                horario_ponencia: { type: string, format: date-time }
+                checkin_horario: { type: string, format: date-time }
+                ponente_estado: { type: string }
+                presentacion_link: { type: string }
+                billete_ida_link: { type: string }
+                billete_vuelta_link: { type: string }
+                tipo_ponencia: { type: string }
+      responses:
+        "200":
+          description: Ponencia actualizada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OkResponse"
+        "401": # CAMBIO(4)
+          $ref: "#/components/responses/Unauthorized"
+        "404": # CAMBIO(4)
+          $ref: "#/components/responses/NotFound"
+
+    delete:
+      tags: [Ponencias]
+      summary: Eliminar ponencia
+      security:
+        - BearerAuth: []
+        - CookieAuth: [] # CAMBIO(1)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: Ponencia eliminada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OkResponse"
+        "401": # CAMBIO(4)
+          $ref: "#/components/responses/Unauthorized"
+        "404": # CAMBIO(4)
+          $ref: "#/components/responses/NotFound"

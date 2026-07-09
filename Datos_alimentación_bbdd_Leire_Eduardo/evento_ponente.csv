@@ -1,42 +1,41 @@
-Fragmento de código
 id_evento_ponente,nombre_hotel,nota_transporte,horario_ida_transporte,horario_vuelta_transporte,localizacion_hotel,horario_ponencia,checking_horario,ponente_estado,presentacion_link,billete_ida_link,billete_vuelta_link,tipo_ponencias,id_ponente,id_evento
-1,Hotel NH Europa,mull,08:30,19:00,Vitoria-Gasteiz,09:00,Confirmado,Activo,mull,mull,mull,Keynote,1,1
-2,Hotel Carlton,mull,09:00,20:00,Bilbao,10:00,Confirmado,Activo,mull,mull,mull,Panelista,2,1
-3,Hotel Hesperia,mull,08:00,18:00,Bilbao,09:00,Confirmado,Activo,mull,mull,mull,Ponente,3,2
-4,Hotel Melia,mull,09:30,21:00,Barcelona,10:30,Confirmado,Activo,mull,mull,mull,Moderador,4,3
-5,Hotel Wellington,mull,08:00,19:00,Madrid,09:00,Confirmado,Activo,mull,mull,mull,Keynote,5,4
-6,Hotel Maria Cristina,mull,09:00,20:00,San Sebastian,10:00,Confirmado,Activo,mull,mull,mull,Ponente,6,5
-7,Hotel Canciller,mull,08:30,18:30,Vitoria-Gasteiz,09:30,Confirmado,Activo,mull,mull,mull,Panelista,7,6
-8,Hotel Tres Reyes,mull,09:00,20:00,Arrasate,10:00,Confirmado,Activo,mull,mull,mull,Ponente,8,7
-9,Hotel Ibis,mull,08:00,19:00,Beasain,09:00,Confirmado,Activo,mull,mull,mull,Keynote,9,8
-10,Hotel Eibar,mull,09:00,20:00,Elorrio,10:00,Confirmado,Activo,mull,mull,mull,Moderador,10,9
-11,Hotel Petronor,mull,08:30,19:30,Muskiz,09:30,Confirmado,Activo,mull,mull,mull,Ponente,11,10
-12,Hotel Euskaltel,mull,09:00,20:00,Derio,10:00,Confirmado,Activo,mull,mull,mull,Keynote,12,11
-13,Hotel Londres,mull,08:00,19:00,San Sebastian,09:00,Confirmado,Activo,mull,mull,mull,Panelista,13,12
-14,Hotel Palacio Europa,mull,08:30,18:30,Vitoria-Gasteiz,09:30,Confirmado,Activo,mull,mull,mull,Ponente,14,13
-15,Hotel Culinary,mull,09:00,20:00,San Sebastian,10:00,Confirmado,Activo,mull,mull,mull,Moderador,15,14
-16,Hotel Siemens,mull,08:00,19:00,Zamudio,09:00,Confirmado,Activo,mull,mull,mull,Keynote,16,15
-17,Hotel Ingeteam,mull,09:00,20:00,Zamudio,10:00,Confirmado,Activo,mull,mull,mull,Ponente,17,16
-18,Hotel ABB,mull,08:30,18:30,Oiartzun,09:30,Confirmado,Activo,mull,mull,mull,Panelista,18,17
-19,Hotel Carlton,mull,09:00,20:00,Bilbao,10:00,Confirmado,Activo,mull,mull,mull,Ponente,19,18
-20,Hotel Sener,mull,08:00,19:00,Getxo,09:00,Confirmado,Activo,mull,mull,mull,Keynote,20,19
-21,Hotel Gamesa,mull,09:00,20:00,Zamudio,10:00,Confirmado,Activo,mull,mull,mull,Moderador,21,20
-22,Hotel Ulma,mull,08:30,18:30,Oñati,09:30,Confirmado,Activo,mull,mull,mull,Ponente,22,21
-23,Hotel Danobat,mull,09:00,20:00,Elgoibar,10:00,Confirmado,Activo,mull,mull,mull,Keynote,23,22
-24,Hotel Mondragon,mull,08:00,19:00,Mondragon,09:00,Confirmado,Activo,mull,mull,mull,Panelista,24,23
-25,Hotel Kide,mull,09:00,20:00,Berriatua,10:00,Confirmado,Activo,mull,mull,mull,Ponente,25,24
-26,Hotel Orbea,mull,08:30,18:30,Mallabia,09:30,Confirmado,Activo,mull,mull,mull,Moderador,26,25
-27,Hotel Delfin,mull,09:00,20:00,Bilbao,10:00,Confirmado,Activo,mull,mull,mull,Keynote,27,26
-28,Hotel Berri,mull,08:00,19:00,Vitoria-Gasteiz,09:00,Confirmado,Activo,mull,mull,mull,Ponente,28,27
-29,Hotel Altuna,mull,09:00,20:00,Bergara,10:00,Confirmado,Activo,mull,mull,mull,Panelista,29,28
-30,Hotel Mendi,mull,08:30,18:30,Vitoria-Gasteiz,09:30,Confirmado,Activo,mull,mull,mull,Ponente,30,29
-31,Hotel Susaeta,mull,09:00,20:00,Vitoria-Gasteiz,10:00,Confirmado,Activo,mull,mull,mull,Keynote,31,30
-32,Hotel Loidi,mull,08:00,19:00,San Sebastian,09:00,Confirmado,Activo,mull,mull,mull,Moderador,32,31
-33,Hotel Aiz,mull,09:00,20:00,Tolosa,10:00,Confirmado,Activo,mull,mull,mull,Ponente,33,32
-34,Hotel Irin,mull,08:30,18:30,Bilbao,09:30,Confirmado,Activo,mull,mull,mull,Keynote,34,33
-35,Hotel Oia,mull,09:00,20:00,Zarautz,10:00,Confirmado,Activo,mull,mull,mull,Panelista,35,34
-36,Hotel Zug,mull,08:00,19:00,Eibar,09:00,Confirmado,Activo,mull,mull,mull,Ponente,36,35
-37,Hotel Lar,mull,09:00,20:00,Azpeitia,10:00,Confirmado,Activo,mull,mull,mull,Moderador,37,36
-38,Hotel Ega,mull,08:30,18:30,Hernani,09:30,Confirmado,Activo,mull,mull,mull,Keynote,38,37
-39,Hotel Ote,mull,09:00,20:00,Irun,10:00,Confirmado,Activo,mull,mull,mull,Ponente,39,38
-40,Hotel Basa,mull,08:00,19:00,Vitoria-Gasteiz,09:00,Confirmado,Activo,mull,mull,mull,Panelista,40,40
+1,Hotel NH Europa,,08:30,19:00,Vitoria-Gasteiz,09:00,Confirmado,Activo,,,,Keynote,1,1
+2,Hotel Carlton,,09:00,20:00,Bilbao,10:00,Confirmado,Activo,,,,Panelista,2,1
+3,Hotel Hesperia,,08:00,18:00,Bilbao,09:00,Confirmado,Activo,,,,Ponente,3,2
+4,Hotel Melia,,09:30,21:00,Barcelona,10:30,Confirmado,Activo,,,,Moderador,4,3
+5,Hotel Wellington,,08:00,19:00,Madrid,09:00,Confirmado,Activo,,,,Keynote,5,4
+6,Hotel Maria Cristina,,09:00,20:00,San Sebastian,10:00,Confirmado,Activo,,,,Ponente,6,5
+7,Hotel Canciller,,08:30,18:30,Vitoria-Gasteiz,09:30,Confirmado,Activo,,,,Panelista,7,6
+8,Hotel Tres Reyes,,09:00,20:00,Arrasate,10:00,Confirmado,Activo,,,,Ponente,8,7
+9,Hotel Ibis,,08:00,19:00,Beasain,09:00,Confirmado,Activo,,,,Keynote,9,8
+10,Hotel Eibar,,09:00,20:00,Elorrio,10:00,Confirmado,Activo,,,,Moderador,10,9
+11,Hotel Petronor,,08:30,19:30,Muskiz,09:30,Confirmado,Activo,,,,Ponente,11,10
+12,Hotel Euskaltel,,09:00,20:00,Derio,10:00,Confirmado,Activo,,,,Keynote,12,11
+13,Hotel Londres,,08:00,19:00,San Sebastian,09:00,Confirmado,Activo,,,,Panelista,13,12
+14,Hotel Palacio Europa,,08:30,18:30,Vitoria-Gasteiz,09:30,Confirmado,Activo,,,,Ponente,14,13
+15,Hotel Culinary,,09:00,20:00,San Sebastian,10:00,Confirmado,Activo,,,,Moderador,15,14
+16,Hotel Siemens,,08:00,19:00,Zamudio,09:00,Confirmado,Activo,,,,Keynote,16,15
+17,Hotel Ingeteam,,09:00,20:00,Zamudio,10:00,Confirmado,Activo,,,,Ponente,17,16
+18,Hotel ABB,,08:30,18:30,Oiartzun,09:30,Confirmado,Activo,,,,Panelista,18,17
+19,Hotel Carlton,,09:00,20:00,Bilbao,10:00,Confirmado,Activo,,,,Ponente,19,18
+20,Hotel Sener,,08:00,19:00,Getxo,09:00,Confirmado,Activo,,,,Keynote,20,19
+21,Hotel Gamesa,,09:00,20:00,Zamudio,10:00,Confirmado,Activo,,,,Moderador,21,20
+22,Hotel Ulma,,08:30,18:30,Oñati,09:30,Confirmado,Activo,,,,Ponente,22,21
+23,Hotel Danobat,,09:00,20:00,Elgoibar,10:00,Confirmado,Activo,,,,Keynote,23,22
+24,Hotel Mondragon,,08:00,19:00,Mondragon,09:00,Confirmado,Activo,,,,Panelista,24,23
+25,Hotel Kide,,09:00,20:00,Berriatua,10:00,Confirmado,Activo,,,,Ponente,25,24
+26,Hotel Orbea,,08:30,18:30,Mallabia,09:30,Confirmado,Activo,,,,Moderador,26,25
+27,Hotel Delfin,,09:00,20:00,Bilbao,10:00,Confirmado,Activo,,,,Keynote,27,26
+28,Hotel Berri,,08:00,19:00,Vitoria-Gasteiz,09:00,Confirmado,Activo,,,,Ponente,28,27
+29,Hotel Altuna,,09:00,20:00,Bergara,10:00,Confirmado,Activo,,,,Panelista,29,28
+30,Hotel Mendi,,08:30,18:30,Vitoria-Gasteiz,09:30,Confirmado,Activo,,,,Ponente,30,29
+31,Hotel Susaeta,,09:00,20:00,Vitoria-Gasteiz,10:00,Confirmado,Activo,,,,Keynote,31,30
+32,Hotel Loidi,,08:00,19:00,San Sebastian,09:00,Confirmado,Activo,,,,Moderador,32,31
+33,Hotel Aiz,,09:00,20:00,Tolosa,10:00,Confirmado,Activo,,,,Ponente,33,32
+34,Hotel Irin,,08:30,18:30,Bilbao,09:30,Confirmado,Activo,,,,Keynote,34,33
+35,Hotel Oia,,09:00,20:00,Zarautz,10:00,Confirmado,Activo,,,,Panelista,35,34
+36,Hotel Zug,,08:00,19:00,Eibar,09:00,Confirmado,Activo,,,,Ponente,36,35
+37,Hotel Lar,,09:00,20:00,Azpeitia,10:00,Confirmado,Activo,,,,Moderador,37,36
+38,Hotel Ega,,08:30,18:30,Hernani,09:30,Confirmado,Activo,,,,Keynote,38,37
+39,Hotel Ote,,09:00,20:00,Irun,10:00,Confirmado,Activo,,,,Ponente,39,38
+40,Hotel Basa,,08:00,19:00,Vitoria-Gasteiz,09:00,Confirmado,Activo,,,,Panelista,40,40

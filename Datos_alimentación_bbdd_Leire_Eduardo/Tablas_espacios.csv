@@ -1,44 +1,44 @@
 id_espacio,nombre_espacio,ciudad,direccion,aforo,nota,telefono_contacto,nombre_contacto,email_contacto
-ESP0001,San MamÈs,Bilbao,"Rafael Moreno Pitxitxi, Puerta 20",5530,Restaurante; cafeterÌa; parada de metro/tranvÌa,946854180,Iker Callejo,i.callejo@athletic-club.eus
-ESP0002,Reale Arena,Donostia / San Sebasti·n,Anoeta Pasealekua 1,4348,Parking 350; restaurante; cafeterÌa; wifi; accesibilidad completa,688693466,Markel Guevara,markel.guevara@realsociedad.eus
-ESP0003,Fernando Buesa Arena,Vitoria-Gasteiz,"Portal de Zurbano, 30",15544,Parking 2700; accesibilidad fÌsica,659771222,Ernesto Cortaberria,ecortaberria@bkndagroup.com
-ESP0004,Iradier Arena,Vitoria-Gasteiz,"Plaza del Renacimiento, 6",10625,Parking 700; accesibilidad fÌsica,945161616,,iradiarena@vitoria-gasteiz.org
-ESP0005,Estadio Ipurua,Eibar,"Calle Ipurua, 2",275,Parking 15; restaurante; cafeterÌa; wifi; accesibilidad fÌsica,687958950,Ainara LÛpez de ViÒaspre,Ainara.lopezdevinaspre@sdeibar.com
-ESP0006,Bilbao Exhibition Centre,Barakaldo,Ronda de Azkue 1,38910,Parking 4000; parada Ansio; restaurante; cafeterÌa; wifi; accesibilidad fÌsica,944040068,Marta Campos,mcampos@bec.eu
-ESP0007,Bizkaia Aretoa ñ UPV/EHU,Bilbao,"Abandoibarra Etorbidea, 3",1836,Parada Guggenheim; wifi; cafeterÌa; accesibilidad fÌsica,946018100,Ione Arana,bizkaia-aretoa@ehu.eus
-ESP0008,Palacio Euskalduna Jauregia,Bilbao,"Avenida Abandoibarra, 4",8652,Parking 475; restaurante; cafeterÌa; wifi; parada Euskalduna; accesibilidad fÌsica,944035000,BegoÒa Anguisola,banguisola@euskalduna.eus
-ESP0009,Kursaal,Donostia / San Sebasti·n,"Av. de Zurriola, 1",7134,Parking 300; restaurante; wifi; parada Zurriola Kursaal; accesibilidad completa,943003000,Mikel Usandizaga,musandizaga@kursaal.eus
-ESP0010,Palacio de Congresos Europa,Vitoria-Gasteiz,"Avenida Gasteiz, 85",5314,"Parking; wifi; parada Europa; accesibilidad fÌsica, psÌquica, visual y org·nica",945161520,Javier Estebaranz,congrestur@vitoria-gasteiz.org
-ESP0011,Recinto Ferial FICOBA,Irun,"Avenida Iparralde, 43",29297,Parking 1000; restaurante; cafeterÌa; wifi; parada metro/tranvÌa visible sin texto; accesibilidad fÌsica,943667788,Ane Miren Axpe,a.axpe@ficoba.org
-ESP0012,Espacio Nuka,Bilbao,"Calle Costa, 3",100,Wifi; parada Indautxu; accesibilidad fÌsica,620827526,Virginia PÈrez,nuka@espacionuka.com
-ESP0013,Yimby Sota,Bilbao,"Don Diego LÛpez, 45",180,Wifi; accesibilidad completa,600478918,Naiara Hurtado,naiara@yimbybilbao.com
-ESP0015,Talent House,Donostia / San Sebasti·n,"Paseo Duque de Baena, 42",374,Parking 14; wifi; vistas panor·micas; accesibilidad completa,943483483,Ane Oliv·n,ane_olivan@donostia.eus
-ESP0016,Mi Castillo de Arena,Zurbano,"Barrio del Medio, 7",310,Parking; jardÌn exterior; patio de piedra; posibilidad de instalar carpas,696208067,Ania Verastegui Murga,info@micastillodearena.es
-ESP0017,Parque TecnolÛgico de Euskadi - Campus Vitoria-Gasteiz,Vitoria-Gasteiz,"Hermanos Lumiere, 11",1070,Parking 350; restaurante; cafeterÌa; wifi; accesibilidad completa,945010055,Txus Zabaleta,pta@tisasa.es
-ESP0019,Bodegas Baigorri,Samaniego,"Ctra. Vitoria-LogroÒo, km 53",630,Parking; restaurante; wifi; accesibilidad fÌsica,945609420,Sara Courel,sara.courel@bodegasbaigorri.com
-ESP0020,Bodegas Casa Primicia,Laguardia,"Camino de la Hoya, 1",350,Restaurante; cafeterÌa; wifi; distancia zona centro,945600296,Fabiola,info@casaprimicia.com
+ESP0001,San Mam√©s,Bilbao,"Rafael Moreno Pitxitxi, Puerta 20",5530,Restaurante; cafeter√≠a; parada de metro/tranv√≠a,946854180,Iker Callejo,i.callejo@athletic-club.eus
+ESP0002,Reale Arena,Donostia / San Sebasti√°n,Anoeta Pasealekua 1,4348,Parking 350; restaurante; cafeter√≠a; wifi; accesibilidad completa,688693466,Markel Guevara,markel.guevara@realsociedad.eus
+ESP0003,Fernando Buesa Arena,Vitoria-Gasteiz,"Portal de Zurbano, 30",15544,Parking 2700; accesibilidad f√≠sica,659771222,Ernesto Cortaberria,ecortaberria@bkndagroup.com
+ESP0004,Iradier Arena,Vitoria-Gasteiz,"Plaza del Renacimiento, 6",10625,Parking 700; accesibilidad f√≠sica,945161616,,iradiarena@vitoria-gasteiz.org
+ESP0005,Estadio Ipurua,Eibar,"Calle Ipurua, 2",275,Parking 15; restaurante; cafeter√≠a; wifi; accesibilidad f√≠sica,687958950,Ainara L√≥pez de Vi√±aspre,Ainara.lopezdevinaspre@sdeibar.com
+ESP0006,Bilbao Exhibition Centre,Barakaldo,Ronda de Azkue 1,38910,Parking 4000; parada Ansio; restaurante; cafeter√≠a; wifi; accesibilidad f√≠sica,944040068,Marta Campos,mcampos@bec.eu
+ESP0007,Bizkaia Aretoa ¬ñ UPV/EHU,Bilbao,"Abandoibarra Etorbidea, 3",1836,Parada Guggenheim; wifi; cafeter√≠a; accesibilidad f√≠sica,946018100,Ione Arana,bizkaia-aretoa@ehu.eus
+ESP0008,Palacio Euskalduna Jauregia,Bilbao,"Avenida Abandoibarra, 4",8652,Parking 475; restaurante; cafeter√≠a; wifi; parada Euskalduna; accesibilidad f√≠sica,944035000,Bego√±a Anguisola,banguisola@euskalduna.eus
+ESP0009,Kursaal,Donostia / San Sebasti√°n,"Av. de Zurriola, 1",7134,Parking 300; restaurante; wifi; parada Zurriola Kursaal; accesibilidad completa,943003000,Mikel Usandizaga,musandizaga@kursaal.eus
+ESP0010,Palacio de Congresos Europa,Vitoria-Gasteiz,"Avenida Gasteiz, 85",5314,"Parking; wifi; parada Europa; accesibilidad f√≠sica, ps√≠quica, visual y org√°nica",945161520,Javier Estebaranz,congrestur@vitoria-gasteiz.org
+ESP0011,Recinto Ferial FICOBA,Irun,"Avenida Iparralde, 43",29297,Parking 1000; restaurante; cafeter√≠a; wifi; parada metro/tranv√≠a visible sin texto; accesibilidad f√≠sica,943667788,Ane Miren Axpe,a.axpe@ficoba.org
+ESP0012,Espacio Nuka,Bilbao,"Calle Costa, 3",100,Wifi; parada Indautxu; accesibilidad f√≠sica,620827526,Virginia P√©rez,nuka@espacionuka.com
+ESP0013,Yimby Sota,Bilbao,"Don Diego L√≥pez, 45",180,Wifi; accesibilidad completa,600478918,Naiara Hurtado,naiara@yimbybilbao.com
+ESP0015,Talent House,Donostia / San Sebasti√°n,"Paseo Duque de Baena, 42",374,Parking 14; wifi; vistas panor√°micas; accesibilidad completa,943483483,Ane Oliv√°n,ane_olivan@donostia.eus
+ESP0016,Mi Castillo de Arena,Zurbano,"Barrio del Medio, 7",310,Parking; jard√≠n exterior; patio de piedra; posibilidad de instalar carpas,696208067,Ania Verastegui Murga,info@micastillodearena.es
+ESP0017,Parque Tecnol√≥gico de Euskadi - Campus Vitoria-Gasteiz,Vitoria-Gasteiz,"Hermanos Lumiere, 11",1070,Parking 350; restaurante; cafeter√≠a; wifi; accesibilidad completa,945010055,Txus Zabaleta,pta@tisasa.es
+ESP0019,Bodegas Baigorri,Samaniego,"Ctra. Vitoria-Logro√±o, km 53",630,Parking; restaurante; wifi; accesibilidad f√≠sica,945609420,Sara Courel,sara.courel@bodegasbaigorri.com
+ESP0020,Bodegas Casa Primicia,Laguardia,"Camino de la Hoya, 1",350,Restaurante; cafeter√≠a; wifi; distancia zona centro,945600296,Fabiola,info@casaprimicia.com
 ESP0021,Arrantzaleen Museoa,Bermeo,Torre de Ercilla,200,,946881171,,arrantzaleenmuseoa@bizkaia.eus
-ESP0022,Auditorio Itsas Etxea,Hondarribia,"Calle Matxin Arzu, 1",560,"Maquinaria escÈnica; iluminaciÛn tÈcnica; proyecciÛn digital de cine; sonido para conciertos, teatro y conferencias; sala de traducciÛn simult·nea; sala de exposiciones utilizable como sala de reuniones.",,,
-ESP0023,Faro de Santa Catalina,Lekeitio,"Avenida Santa Katalina, 65",15,"Mesa grande; pantalla TV; reproductor; recursos humanos y tÈcnicos; servicio de restauraciÛn del faro con pintxos, dulces y cafÈs.",649256877,Marijo Esteo,turismo@lekeitio.eus
-ESP0024,Bauskain,Markina-Xemein,"Barrio Arretxinaga, 34",435,Restaurante; parking 60; accesibilidad fÌsica; gastronomÌa local.,665762766,Amanda,bauskain@deluz.es
-ESP0027,Interpretation Centre La Antigua,Zumarraga,"Diseminados Barreiatua, 49",56,Parking 40; restaurante; cafeterÌa; wifi; accesibilidad fÌsica.,943729154,Izaskun LarraÒaga,ilarranaga@zumarraga.eus
-ESP0028,JardÌn de Barretaguren,G¸eÒes,"Barretaguren, 1",450,JardÌn de 3.400 m≤; porche cubierto exterior; carpa para 300 personas; 2 salones interiores; uso exclusivo; privacidad; outdoor training; showcookings; talleres.,635710635,Xabier Uribarri Blanco,xabier@jardindebarretaguren.com
+ESP0022,Auditorio Itsas Etxea,Hondarribia,"Calle Matxin Arzu, 1",560,"Maquinaria esc√©nica; iluminaci√≥n t√©cnica; proyecci√≥n digital de cine; sonido para conciertos, teatro y conferencias; sala de traducci√≥n simult√°nea; sala de exposiciones utilizable como sala de reuniones.",,,
+ESP0023,Faro de Santa Catalina,Lekeitio,"Avenida Santa Katalina, 65",15,"Mesa grande; pantalla TV; reproductor; recursos humanos y t√©cnicos; servicio de restauraci√≥n del faro con pintxos, dulces y caf√©s.",649256877,Marijo Esteo,turismo@lekeitio.eus
+ESP0024,Bauskain,Markina-Xemein,"Barrio Arretxinaga, 34",435,Restaurante; parking 60; accesibilidad f√≠sica; gastronom√≠a local.,665762766,Amanda,bauskain@deluz.es
+ESP0027,Interpretation Centre La Antigua,Zumarraga,"Diseminados Barreiatua, 49",56,Parking 40; restaurante; cafeter√≠a; wifi; accesibilidad f√≠sica.,943729154,Izaskun Larra√±aga,ilarranaga@zumarraga.eus
+ESP0028,Jard√≠n de Barretaguren,G√ºe√±es,"Barretaguren, 1",450,Jard√≠n de 3.400 m¬≤; porche cubierto exterior; carpa para 300 personas; 2 salones interiores; uso exclusivo; privacidad; outdoor training; showcookings; talleres.,635710635,Xabier Uribarri Blanco,xabier@jardindebarretaguren.com
 ESP0029,Museo Euskal Herria,Gernika-Lumo,"Calle Allende Salazar, 5",165,,946255451,,euskalherriamuseoa@bizkaia.eus
 ESP0046,Palacio Horkasitas,Artzentales,"Horkasitas Auzoa, 69",920,,686372210,Aida Rodriguez,info@palaciohorkasitas.com
-ESP0047,Parque TecnolÛgico de Euskadi - Campus Leioa,Leioa,"Barrio Sarriena, s/n",134,,946855677,Olatz Zalbidea,sedeleioa@parke.eus
-ESP0051,C·mara de Comercio de Bilbao,Bilbao,"Alameda de Recalde, 50",134,,944706500,LucÌa Guerra,lucia.guerra@camarabilbao.com
-ESP0052,FrontÛn Bizkaia,Bilbao,"Kalea Castresana Luis, 2",4500,,617205320,Iranzu Arginzoniz,global@jaialai.eus
-ESP0053,Museo de Arte Sacro,Bilbao,"Plaza EncarnaciÛn, 9B",770,,944320125,Idoia Perez,museo@eleizmuseoa.com
+ESP0047,Parque Tecnol√≥gico de Euskadi - Campus Leioa,Leioa,"Barrio Sarriena, s/n",134,,946855677,Olatz Zalbidea,sedeleioa@parke.eus
+ESP0051,C√°mara de Comercio de Bilbao,Bilbao,"Alameda de Recalde, 50",134,,944706500,Luc√≠a Guerra,lucia.guerra@camarabilbao.com
+ESP0052,Front√≥n Bizkaia,Bilbao,"Kalea Castresana Luis, 2",4500,,617205320,Iranzu Arginzoniz,global@jaialai.eus
+ESP0053,Museo de Arte Sacro,Bilbao,"Plaza Encarnaci√≥n, 9B",770,,944320125,Idoia Perez,museo@eleizmuseoa.com
 ESP0055,Museo Guggenheim Bilbao,Bilbao,"Avenida Abandoibarra, 2",1580,,944359017,Cristina Galdeano,eventos@guggenheim-bilbao.eus
 ESP0057,Museo Reproducciones Bilbao,Bilbao,"San Francisco, 14",209,,944150231,Itziar Martija,itziar.martija@bbmuseoak.eus
 ESP0058,Museo Vasco,Bilbao,"Plaza Miguel Unamuno, 4",200,,944155423,Asier,prentsa@bbmuseoak.eus
 ESP0060,Teatro Arriaga,Bilbao,"Plaza Arriaga, 1",1650,,944792056,Izaskun Ardanaz,iardanaz@teatroarriaga.eus
-ESP0061,Teatro Campos ElÌseos,Bilbao,"Calle de Bertendona, 3",1670,,944438602,Susana Morales,smoraleso@klemark.com
+ESP0061,Teatro Campos El√≠seos,Bilbao,"Calle de Bertendona, 3",1670,,944438602,Susana Morales,smoraleso@klemark.com
 ESP0062,Torre Iberdrola,Bilbao,"Plaza Euskadi, 5",735,,944354349,,eventos@torreiberdrola.com
 ESP0064,Yimby,Bilbao,Ercilla 24,600,,660478918,Carlos Usandizaga,carlos@yimbybilbao.com
 ESP0065,ZAWP,Bilbao,"Ribera de Deusto, 47",800,,646241961,Cristina Pascual,ficc@laterminal.eus
 ESP0030,Bodegas Eguren Ugarte,Laguardia,"A-124, Km 61",826,,945600766,,reservas@egurenugarte.com
-ESP0031,Bodegas Izadi,Villabuena,"HerrerÌa TravesÌa II, 5",65,,945609086,Esther Crespo,club@grupoartevino.com
-ESP0033,Bodegas Valdemar,OyÛn,"Calle Camino Viejo Bidezar, 24",1620,,663334535,Marisa Alonso,enoturismo@valdemar.es
-ESP0034,Centro de Convenciones Villa-LucÌa,Laguardia,Carretera de LogroÒo s/n,2082,,945600032,Rakel Blanco,comercial@villa-lucia.com
-ESP0035,Bodega Berroja,Muxika,"Ajurias, Carretera de Zugastieta a BalcÛn de Bizkaia, Barrio Berroja",430,,944106254,JosÈ Angel Carrero Arketa,txakoli@bodegaberroja.com
+ESP0031,Bodegas Izadi,Villabuena,"Herrer√≠a Traves√≠a II, 5",65,,945609086,Esther Crespo,club@grupoartevino.com
+ESP0033,Bodegas Valdemar,Oy√≥n,"Calle Camino Viejo Bidezar, 24",1620,,663334535,Marisa Alonso,enoturismo@valdemar.es
+ESP0034,Centro de Convenciones Villa-Luc√≠a,Laguardia,Carretera de Logro√±o s/n,2082,,945600032,Rakel Blanco,comercial@villa-lucia.com
+ESP0035,Bodega Berroja,Muxika,"Ajurias, Carretera de Zugastieta a Balc√≥n de Bizkaia, Barrio Berroja",430,,944106254,Jos√© Angel Carrero Arketa,txakoli@bodegaberroja.com

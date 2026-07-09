@@ -1,5 +1,5 @@
 {
-  "id_evento": 12,
+  "id_evento": "44818427-4876-4b88-b71f-72449ce866b1",
   "id_registro": null,
   "tipo_peticion": "consultar_datos_evento",
   "origen": "demo",
@@ -10,7 +10,7 @@
   },
   "contexto": {
     "fase_evento": "ponentes",
-    "fecha_evento": "2026-09-15",
+    "fecha_evento": "2026-09-10",
     "estado_evento": "en_preparacion"
   },
   "modo": "consulta"

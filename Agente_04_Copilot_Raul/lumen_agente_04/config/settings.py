@@ -42,3 +42,9 @@ API_TRIPULACIONES_BASE_URL = SETTINGS.get("BACKEND_BASE_URL", "http://localhost:
 # Token de servicio (JWT) ya emitido por POST /auth/login - Lumen no hace el login el mismo,
 # solo reutiliza un token de una cuenta de servicio configurada aqui.
 API_TRIPULACIONES_TOKEN = SETTINGS.get("API_TRIPULACIONES_TOKEN", "")
+
+# --- BD real (Neon Postgres, SOLO LECTURA) ---------------------------------------------------
+# Si DATABASE_URL esta definida, TODAS las tablas permitidas se leen de la BD real y tiene
+# prioridad sobre USAR_API_TRIPULACIONES. Vacia = comportamiento actual (mock o API hibrida).
+# Debe apuntar al rol agente_readonly, nunca al owner - ver integrations/bd_backend.py.
+DATABASE_URL = SETTINGS.get("DATABASE_URL", "")

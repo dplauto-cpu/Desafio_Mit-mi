@@ -1,12 +1,15 @@
 """
 Acceso de SOLO LECTURA a los datos de Agora para Lumen (Agente 04 - Copilot).
 
-Modo hibrido (ver config/settings.py, USAR_API_TRIPULACIONES):
-- Si esta en False (por defecto): TODO se lee de data/mock/*.json, como en el demo original.
-- Si esta en True: eventos, clientes, espacios y ponentes se leen de la API real "Proyecto
-  Tripulaciones" (integrations/api_backend.py, ver openapi.yaml). Salas, presupuestos, estados
-  y ponencias NO tienen endpoint en esa API todavia, asi que siguen leyendose SIEMPRE de
-  data/mock/*.json, este o no activado USAR_API_TRIPULACIONES.
+Tres modos, por orden de prioridad (ver config/settings.py):
+1. DATABASE_URL definida: TODAS las tablas permitidas se leen de la BD real (Neon Postgres,
+   rol de solo lectura) via integrations/bd_backend.py. Ignora USAR_API_TRIPULACIONES: asi
+   todos los ids vienen de una unica fuente (UUID de la BD) y no se mezclan con los del mock.
+2. USAR_API_TRIPULACIONES=True (y sin DATABASE_URL): eventos, clientes, espacios y ponentes
+   se leen de la API real "Proyecto Tripulaciones" (integrations/api_backend.py, ver
+   openapi.yaml). Salas, presupuestos, estados y ponencias NO tienen endpoint en esa API
+   todavia, asi que siguen leyendose de data/mock/*.json.
+3. Nada configurado (por defecto): TODO se lee de data/mock/*.json, como en el demo original.
 
 Aviso de tipos en modo API: los ids de la API real son UUID; los ids de las 4 tablas que
 siguen en mock son enteros. Si un evento real trae id_sala/id_presupuesto/id_ponencia, ese
@@ -23,7 +26,7 @@ from pathlib import Path
 
 from config.permisos import TABLAS_EXCLUIDAS, TABLAS_PERMITIDAS
 from config.settings import USAR_API_TRIPULACIONES
-from integrations import api_backend
+from integrations import api_backend, bd_backend
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 MOCK_DIR = BASE_DIR / "data" / "mock"
@@ -41,15 +44,23 @@ def tabla_existe(nombre_tabla):
 
 
 def _via_api(tabla):
+    # La BD directa (DATABASE_URL) tiene prioridad: si esta configurada, todo sale de Neon
+    # y la API de Tripulaciones no se usa (evita mezclar ids UUID de dos fuentes distintas).
+    if bd_backend.bd_disponible():
+        return False
     return USAR_API_TRIPULACIONES and tabla in TABLAS_VIA_API
 
 
 def _cargar(tabla):
-    """Carga TODOS los registros de una tabla desde el mock JSON (nunca desde la API real)."""
+    """Carga TODOS los registros de una tabla: de la BD real (Neon) si DATABASE_URL esta
+    configurada, si no del mock JSON (nunca de la API real)."""
     if tabla in TABLAS_EXCLUIDAS:
         raise TablaNoPermitida("Lumen no tiene acceso a la tabla '" + tabla + "'.")
     if tabla not in TABLAS_PERMITIDAS:
         raise TablaNoPermitida("Tabla '" + tabla + "' fuera del alcance de Lumen.")
+
+    if bd_backend.bd_disponible():
+        return bd_backend.leer_tabla(tabla)
 
     ruta = MOCK_DIR / (tabla + ".json")
     if not ruta.exists():
