@@ -1,0 +1,125 @@
+From 9ce91e9670e0b402959b5f159aaa35231186325c Mon Sep 17 00:00:00 2001
+From: ngalparsoro <n.galparsoro@gmail.com>
+Date: Fri, 10 Jul 2026 13:50:37 +0200
+Subject: [PATCH] Endpoints para agentes: GET /ponentes/by-telegram/{id} y GET
+ /eventos/{id}/ponentes (propuesta data)
+
+Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>
+---
+ src/controllers/evento.controller.js  | 22 ++++++++++++++++++++++
+ src/controllers/ponente.controller.js | 23 +++++++++++++++++++++++
+ src/routes/evento.routes.js           |  2 ++
+ src/routes/ponente.routes.js          |  3 +++
+ 4 files changed, 50 insertions(+)
+
+diff --git a/src/controllers/evento.controller.js b/src/controllers/evento.controller.js
+index 550063e..b16ccd9 100644
+--- a/src/controllers/evento.controller.js
++++ b/src/controllers/evento.controller.js
+@@ -37,6 +37,28 @@ export const getEvento = async (req, res, next) => {
+   }
+ };
+ 
++export const getPonentesEvento = async (req, res, next) => {
++  try {
++    const evento = await prisma.evento.findUnique({
++      where: { id: req.params.id },
++      include: { ponencias: { include: { ponente: true } } },
++    });
++
++    if (!evento)
++      return res.status(404).json({ ok: false, message: 'Evento no encontrado', error: [{ type: 'not_found', title: 'Evento no encontrado', detail: 'No existe un evento con ese ID' }] });
++
++    // Un ponente por cada ponencia del evento, con su logística anidada.
++    const ponentes = evento.ponencias.map((ponencia) => ({
++      ...ponencia.ponente,
++      ponencia: { ...ponencia, ponente: undefined },
++    }));
++
++    res.status(200).json({ ok: true, data: ponentes });
++  } catch (error) {
++    next(error);
++  }
++};
++
+ export const postEvento = async (req, res, next) => {
+   try {
+     const { nombreEvento, ciudad, lugarConfirmado, fechaInicio, fechaFin, numeroPersonas, tipoEvento, nota, idCliente, idEstado, idPresupuesto, idSala, idPonencia } = req.body;
+diff --git a/src/controllers/ponente.controller.js b/src/controllers/ponente.controller.js
+index 5a95750..01726bb 100644
+--- a/src/controllers/ponente.controller.js
++++ b/src/controllers/ponente.controller.js
+@@ -20,6 +20,29 @@ export const getPonentes = async (req, res, next) => {
+   }
+ };
+ 
++export const getPonenteByTelegram = async (req, res, next) => {
++  try {
++    // Se consulta con SQL parametrizado (no via modelo Prisma) para que el resto de
++    // endpoints de ponentes no dependan de que la columna telegram_user_id exista ya.
++    // Cuando se aplique la migración que la añade, esto funciona sin tocar nada;
++    // mientras tanto responde 501 con un mensaje claro en vez de un 500 opaco.
++    const ponentes = await prisma.$queryRaw`
++      SELECT * FROM ponentes
++      WHERE telegram_user_id = ${req.params.telegramUserId}
++    `;
++
++    if (!ponentes.length)
++      return res.status(404).json({ ok: false, message: 'Ponente no encontrado', error: [{ type: 'not_found', title: 'Ponente no encontrado', detail: 'Ningún ponente tiene vinculado ese usuario de Telegram' }] });
++
++    res.status(200).json({ ok: true, data: ponentes[0] });
++  } catch (error) {
++    // 42703 = undefined_column en Postgres: la migración de telegram_user_id aún no se aplicó.
++    if (error.meta?.code === '42703' || String(error.message).includes('telegram_user_id'))
++      return res.status(501).json({ ok: false, message: 'Función pendiente de migración', error: [{ type: 'not_implemented', title: 'Columna telegram_user_id no existe todavía', detail: 'Añadir telegram_user_id (String? @unique) al modelo Ponente y migrar. Ver contrato v3 §5.' }] });
++    next(error);
++  }
++};
++
+ export const getPonente = async (req, res, next) => {
+   try {
+     const ponente = await prisma.ponente.findUnique({ where: { id: req.params.id } });
+diff --git a/src/routes/evento.routes.js b/src/routes/evento.routes.js
+index bc2fb57..85f9652 100644
+--- a/src/routes/evento.routes.js
++++ b/src/routes/evento.routes.js
+@@ -3,6 +3,7 @@ import { Router } from 'express';
+ import {
+   getEventos,
+   getEvento,
++  getPonentesEvento,
+   postEvento,
+   patchEvento,
+   deleteEvento,
+@@ -20,6 +21,7 @@ eventoRouter.use(authenticate, authorize('admin'));
+ 
+ eventoRouter.get('/', getEventos);
+ eventoRouter.get('/:id', eventoIdValidation, validateInputs, getEvento);
++eventoRouter.get('/:id/ponentes', eventoIdValidation, validateInputs, getPonentesEvento);
+ eventoRouter.post('/', createEventoValidation, validateInputs, postEvento);
+ eventoRouter.patch(
+   '/:id',
+diff --git a/src/routes/ponente.routes.js b/src/routes/ponente.routes.js
+index 1eb2a4f..4cf9b58 100644
+--- a/src/routes/ponente.routes.js
++++ b/src/routes/ponente.routes.js
+@@ -10,6 +10,7 @@ import {
+ import {
+   getPonentes,
+   getPonente,
++  getPonenteByTelegram,
+   postPonente,
+   patchPonente,
+   deletePonente,
+@@ -20,6 +21,8 @@ export const ponenteRouter = Router();
+ ponenteRouter.use(authenticate, authorize('admin'));
+ 
+ ponenteRouter.get('/', getPonentes);
++// OJO: debe ir ANTES de '/:id' para que 'by-telegram' no se interprete como un id.
++ponenteRouter.get('/by-telegram/:telegramUserId', getPonenteByTelegram);
+ ponenteRouter.get('/:id', ponenteIdValidation, validateInputs, getPonente);
+ ponenteRouter.post('/', createPonenteValidation, validateInputs, postPonente);
+ ponenteRouter.patch('/:id', ponenteIdValidation, updatePonenteValidation, validateInputs, patchPonente);
+-- 
+2.53.0
+

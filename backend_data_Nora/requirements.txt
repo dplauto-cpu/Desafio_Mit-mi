@@ -1,0 +1,13 @@
+# Backend unificado de data (FastAPI). Incluye las dependencias de los dos agentes
+# que monta, porque corren dentro de este mismo proceso — los requirements propios
+# de cada agente no se tocan (siguen valiendo para arrancarlos sueltos).
+
+fastapi>=0.110
+uvicorn>=0.29
+
+# Lumen
+openai>=1.0.0           # su LLM (via LLM_PROVIDER/GROQ_BASE_URL del .env)
+psycopg2-binary>=2.9.0  # lectura de Neon (rol solo-lectura)
+
+# Operis — el motor "reglas" (por defecto) solo usa la libreria estandar.
+# groq                  # opcional: motor "llm" (requiere ademas GROQ_API_KEY)
