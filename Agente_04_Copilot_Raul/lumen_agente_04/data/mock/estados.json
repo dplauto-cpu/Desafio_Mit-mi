@@ -1,5 +1,0 @@
-[
-  { "id_estado": 1, "descripcion": "solicitado" },
-  { "id_estado": 2, "descripcion": "en_preparacion" },
-  { "id_estado": 3, "descripcion": "confirmado" }
-]
