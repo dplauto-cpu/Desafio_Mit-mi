@@ -15,5 +15,7 @@ The Bridge School Bootcamp DS — Desafío 5 · Mitümi (organización de evento
 | `diseno/wireframes/` | Wireframes de la aplicación (HTML) |
 | `grupos/grupo2-presupuestos-servicios/` | Entregables del Grupo 2: presupuestos y servicios |
 | `grupos/grupo3-ponentes/` | Entregables del Grupo 3: ponentes (BBDD, agentes IA, interfaz) |
+| `agente_operis_autoV2.0/` | Agente Operis (extracción de briefings a JSON estructurado): motor de reglas + motor LLM (Groq). Ver su propio `README.md` |
+| `memoria_operis_barbara.md` | Memoria técnica del Agente Operis: contexto, evolución y decisiones de diseño a lo largo de las distintas fases |
 
 El backend del proyecto (`proyectoTripulacionesBackend`) vive en su propio repositorio, fuera de este.

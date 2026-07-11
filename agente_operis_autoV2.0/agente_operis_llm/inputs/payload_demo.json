@@ -1,5 +1,5 @@
 {
-  "id_evento": null,
+  "id_evento": "evt_demo_001",
   "id_registro": null,
   "tipo_peticion": "extraer_briefing",
   "origen": "demo",
