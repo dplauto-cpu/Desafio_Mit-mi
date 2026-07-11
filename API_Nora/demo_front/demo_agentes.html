@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Backstage · Demo de agentes</title>
+<style>
+  :root {
+    --plane: #f9f9f7; --surface: #fcfcfb; --ink: #0b0b0b; --ink2: #52514e;
+    --muted: #898781; --grid: #e1e0d9; --ring: rgba(11,11,11,.10);
+    --azul: #2a78d6; --azul-suave: #e8f1fc; --ok: #0ca30c; --okt: #006300;
+    --warn: #8a5d00; --warnbg: #fdf3dd; --crit: #d03b3b;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --plane: #0d0d0d; --surface: #1a1a19; --ink: #fff; --ink2: #c3c2b7;
+      --muted: #898781; --grid: #2c2c2a; --ring: rgba(255,255,255,.12);
+      --azul: #3987e5; --azul-suave: #16304d; --ok: #0ca30c; --okt: #2fbf2f;
+      --warn: #fab219; --warnbg: #2e2410; --crit: #e66767;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--plane); color: var(--ink);
+    font: 15px/1.55 system-ui, -apple-system, "Segoe UI", sans-serif;
+    padding: 26px 16px 60px;
+  }
+  .lienzo { max-width: 1000px; margin: 0 auto; }
+  header { margin-bottom: 18px; }
+  header .ceja { font-size: 12px; font-weight: 600; letter-spacing: .09em; text-transform: uppercase; color: var(--ink2); margin: 0 0 4px; }
+  header h1 { font-size: 24px; margin: 0 0 4px; letter-spacing: -0.015em; }
+  header p { margin: 0; color: var(--ink2); max-width: 70ch; }
+
+  .estado-servicios { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+  .servicio {
+    display: inline-flex; align-items: center; gap: 7px; font-size: 12.5px; font-weight: 600;
+    background: var(--surface); border: 1px solid var(--ring); border-radius: 999px; padding: 4px 12px; color: var(--ink2);
+  }
+  .servicio i { width: 9px; height: 9px; border-radius: 50%; background: var(--muted); font-style: normal; flex: none; }
+  .servicio.on i { background: var(--ok); }
+  .servicio.off i { background: var(--crit); }
+
+  .pestanas { display: flex; gap: 6px; margin: 22px 0 0; }
+  .pestana {
+    font: inherit; font-weight: 600; font-size: 14px; color: var(--ink2);
+    background: transparent; border: 1px solid transparent; border-radius: 9px 9px 0 0;
+    padding: 9px 18px; cursor: pointer;
+  }
+  .pestana[aria-selected="true"] { background: var(--surface); border-color: var(--ring); border-bottom-color: var(--surface); color: var(--ink); }
+  .pestana:focus-visible { outline: 2px solid var(--azul); outline-offset: -2px; }
+  .panel {
+    background: var(--surface); border: 1px solid var(--ring); border-radius: 0 10px 10px 10px;
+    padding: 20px; margin-top: -1px;
+  }
+  [hidden] { display: none !important; }
+
+  /* ---- chat Lumen ---- */
+  #hilo { display: flex; flex-direction: column; gap: 10px; min-height: 230px; max-height: 430px; overflow-y: auto; padding: 4px 2px; }
+  .msg { max-width: 78%; padding: 9px 14px; border-radius: 12px; white-space: pre-wrap; }
+  .msg.yo { align-self: flex-end; background: var(--azul); color: #fff; border-bottom-right-radius: 4px; }
+  .msg.agente { align-self: flex-start; background: var(--azul-suave); border-bottom-left-radius: 4px; }
+  .msg.sistema { align-self: center; color: var(--muted); font-size: 12.5px; background: none; padding: 2px; text-align: center; }
+  .msg .meta { display: block; font-size: 11.5px; color: inherit; opacity: .65; margin-top: 5px; }
+  form.linea { display: flex; gap: 8px; margin-top: 14px; }
+  input[type=text], textarea {
+    font: inherit; color: var(--ink); background: var(--plane);
+    border: 1px solid var(--grid); border-radius: 9px; padding: 10px 13px; width: 100%;
+  }
+  input[type=text]:focus-visible, textarea:focus-visible { outline: 2px solid var(--azul); outline-offset: -1px; }
+  button.principal {
+    font: inherit; font-weight: 600; color: #fff; background: var(--azul);
+    border: none; border-radius: 9px; padding: 10px 20px; cursor: pointer; flex: none;
+  }
+  button.principal:disabled { opacity: .5; cursor: default; }
+  button.secundario {
+    font: inherit; font-size: 13px; color: var(--ink2); background: none;
+    border: 1px solid var(--grid); border-radius: 8px; padding: 6px 12px; cursor: pointer;
+  }
+  button:focus-visible { outline: 2px solid var(--azul); outline-offset: 2px; }
+  .sugerencias { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+
+  /* ---- Operis ---- */
+  textarea { min-height: 150px; resize: vertical; }
+  .fila-acciones { display: flex; gap: 10px; align-items: center; margin-top: 12px; flex-wrap: wrap; }
+  .radio { font-size: 13.5px; color: var(--ink2); display: inline-flex; gap: 5px; align-items: center; }
+  .aviso-humano {
+    display: none; margin-top: 16px; padding: 10px 14px; border-radius: 9px;
+    background: var(--warnbg); color: var(--warn); font-size: 13.5px; font-weight: 600;
+  }
+  .bloques { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; margin-top: 14px; }
+  .bloque { border: 1px solid var(--grid); border-radius: 9px; padding: 13px 15px; }
+  .bloque h3 { margin: 0 0 8px; font-size: 12px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); }
+  .campo { display: flex; justify-content: space-between; gap: 12px; font-size: 13.5px; padding: 3px 0; }
+  .campo .k { color: var(--ink2); flex: none; }
+  .campo .v { font-weight: 600; text-align: right; overflow-wrap: anywhere; }
+  .campo .v.vacio { color: var(--muted); font-weight: 400; font-style: italic; }
+  .chips { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 12px; }
+  .chip-falta {
+    font-size: 12px; font-weight: 600; color: var(--warn); background: var(--warnbg);
+    border-radius: 999px; padding: 3px 11px;
+  }
+  .cargando { color: var(--muted); font-size: 13.5px; margin-top: 12px; }
+  footer { color: var(--muted); font-size: 12.5px; margin-top: 20px; }
+  footer code { background: var(--surface); border: 1px solid var(--ring); border-radius: 5px; padding: 1px 6px; }
+</style>
+</head>
+<body>
+<div class="lienzo">
+
+  <header>
+    <p class="ceja">Mitümi · Backstage · demo local</p>
+    <h1>Usa los agentes desde el navegador</h1>
+    <p>Esta página habla directamente con los servidores locales de los agentes — el mismo camino que usará
+    el front de React. Lumen responde con los datos reales de Neon.</p>
+    <div class="estado-servicios">
+      <span class="servicio" id="srv-lumen"><i></i>Lumen · :5001</span>
+      <span class="servicio" id="srv-operis"><i></i>Operis · :5002</span>
+    </div>
+  </header>
+
+  <div class="pestanas" role="tablist">
+    <button class="pestana" role="tab" id="tab-lumen" aria-selected="true" aria-controls="panel-lumen">💬 Lumen — copiloto</button>
+    <button class="pestana" role="tab" id="tab-operis" aria-selected="false" aria-controls="panel-operis">📋 Operis — autocompletar briefing</button>
+  </div>
+
+  <!-- ============ LUMEN ============ -->
+  <section class="panel" id="panel-lumen" role="tabpanel" aria-labelledby="tab-lumen">
+    <div id="hilo">
+      <div class="msg sistema">Pregunta lo que quieras sobre los eventos. La memoria de la conversación se mantiene por sesión.</div>
+    </div>
+    <div class="sugerencias">
+      <button class="secundario sugerencia">¿Cuántos eventos hay confirmados?</button>
+      <button class="secundario sugerencia">¿Qué eventos hay en Bilbao?</button>
+      <button class="secundario sugerencia">Dame el contexto del Tech Summit 2026</button>
+      <button class="secundario" id="btn-reset">🗑 Nueva conversación</button>
+    </div>
+    <form class="linea" id="form-chat">
+      <input type="text" id="pregunta" placeholder="Escribe tu pregunta para Lumen…" autocomplete="off">
+      <button class="principal" id="btn-enviar" type="submit">Enviar</button>
+    </form>
+  </section>
+
+  <!-- ============ OPERIS ============ -->
+  <section class="panel" id="panel-operis" role="tabpanel" aria-labelledby="tab-operis" hidden>
+    <label for="briefing" style="font-size:13.5px;color:var(--ink2)">Pega aquí el email o briefing del cliente:</label>
+    <textarea id="briefing" style="margin-top:8px">Buenas tardes, soy Laura Martínez, responsable de marketing de TechCorp S.L. Queremos organizar el Congreso Anual de Innovación Digital en Madrid los días 15, 16 y 17 de octubre de 2026, para unas 350 personas. Necesitamos catering, audiovisuales y streaming. El presupuesto aproximado es de 45.000 euros. El evento sería en el Hotel Marriott Auditorium. Contacto: laura.martinez@techcorp.es · 600 123 456.</textarea>
+    <div class="fila-acciones">
+      <button class="principal" id="btn-extraer">Autocompletar campos</button>
+      <label class="radio"><input type="radio" name="motor" value="reglas" checked> motor de reglas (gratis)</label>
+      <label class="radio"><input type="radio" name="motor" value="llm"> motor LLM (necesita API key)</label>
+    </div>
+    <div class="aviso-humano" id="aviso-humano">⚠️ Propuesta del agente — revísala antes de guardar. La IA propone, el humano decide.</div>
+    <div class="cargando" id="operis-estado" hidden>Extrayendo campos…</div>
+    <div class="chips" id="operis-faltan"></div>
+    <div class="bloques" id="operis-bloques"></div>
+  </section>
+
+  <footer>
+    <p>Si un punto sale en rojo, arranca ese agente: <code>python servidor.py</code> en
+    <code>lumen_agente_04/</code> (Lumen) o <code>agente_operis_llm/</code> (Operis), y recarga.</p>
+  </footer>
+</div>
+
+<script>
+  const LUMEN = "http://localhost:5001", OPERIS = "http://localhost:5002";
+
+  /* ---- estado de servicios ---- */
+  async function ping(url, el) {
+    try { const r = await fetch(url + "/", { signal: AbortSignal.timeout(2500) });
+      el.classList.toggle("on", r.ok); el.classList.toggle("off", !r.ok);
+    } catch { el.classList.add("off"); el.classList.remove("on"); }
+  }
+  function comprobarServicios() {
+    ping(LUMEN, document.getElementById("srv-lumen"));
+    ping(OPERIS, document.getElementById("srv-operis"));
+  }
+  comprobarServicios(); setInterval(comprobarServicios, 10000);
+
+  /* ---- pestañas ---- */
+  const tabs = [["tab-lumen","panel-lumen"],["tab-operis","panel-operis"]];
+  tabs.forEach(([t]) => document.getElementById(t).addEventListener("click", () => {
+    tabs.forEach(([tt,pp]) => {
+      document.getElementById(tt).setAttribute("aria-selected", tt === t);
+      document.getElementById(pp).hidden = tt !== t;
+    });
+  }));
+
+  /* ---- chat Lumen ---- */
+  let sesionId = null;
+  const hilo = document.getElementById("hilo");
+  const inp = document.getElementById("pregunta");
+  const btnEnviar = document.getElementById("btn-enviar");
+
+  function burbuja(texto, clase, meta) {
+    const d = document.createElement("div");
+    d.className = "msg " + clase;
+    d.textContent = texto;
+    if (meta) { const m = document.createElement("span"); m.className = "meta"; m.textContent = meta; d.appendChild(m); }
+    hilo.appendChild(d); hilo.scrollTop = hilo.scrollHeight;
+    return d;
+  }
+
+  async function preguntar(texto) {
+    burbuja(texto, "yo");
+    inp.value = ""; btnEnviar.disabled = true;
+    const pensando = burbuja("Lumen está pensando…", "sistema");
+    try {
+      const r = await fetch(LUMEN + "/chat", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(sesionId ? { pregunta: texto, sesion_id: sesionId } : { pregunta: texto })
+      });
+      const data = await r.json();
+      pensando.remove();
+      if (!r.ok) { burbuja("Error del agente: " + (data.mensaje || r.status), "sistema"); return; }
+      sesionId = data.sesion_id || sesionId;
+      let meta = [];
+      if (data.requiere_validacion_humana) meta.push("requiere validación humana");
+      if (data.nivel_riesgo && data.nivel_riesgo !== "bajo") meta.push("riesgo " + data.nivel_riesgo);
+      burbuja(data.resumen || "(respuesta sin resumen)", "agente", meta.join(" · ") || null);
+    } catch (e) {
+      pensando.remove();
+      burbuja("No llego a Lumen (:5001). ¿Está arrancado su servidor.py?", "sistema");
+    } finally { btnEnviar.disabled = false; inp.focus(); }
+  }
+
+  document.getElementById("form-chat").addEventListener("submit", e => {
+    e.preventDefault();
+    const t = inp.value.trim();
+    if (t) preguntar(t);
+  });
+  document.querySelectorAll(".sugerencia").forEach(b =>
+    b.addEventListener("click", () => preguntar(b.textContent)));
+  document.getElementById("btn-reset").addEventListener("click", async () => {
+    if (sesionId) { try { await fetch(LUMEN + "/chat/reset", { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify({ sesion_id: sesionId }) }); } catch {} }
+    sesionId = null; hilo.innerHTML = "";
+    burbuja("Conversación nueva. La memoria anterior se ha olvidado.", "sistema");
+  });
+
+  /* ---- Operis ---- */
+  const NOMBRES_BLOQUE = { evento: "Evento", cliente: "Cliente", espacio: "Espacio", sala: "Sala", presupuesto: "Presupuesto" };
+  document.getElementById("btn-extraer").addEventListener("click", async () => {
+    const texto = document.getElementById("briefing").value.trim();
+    const estado = document.getElementById("operis-estado");
+    const cajas = document.getElementById("operis-bloques");
+    const faltan = document.getElementById("operis-faltan");
+    const aviso = document.getElementById("aviso-humano");
+    if (!texto) return;
+    cajas.innerHTML = ""; faltan.innerHTML = ""; aviso.style.display = "none"; estado.hidden = false;
+    const motor = document.querySelector("input[name=motor]:checked").value;
+    try {
+      const r = await fetch(OPERIS + "/autocompletar", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ texto_briefing: texto, motor })
+      });
+      const data = await r.json();
+      estado.hidden = true;
+      if (!r.ok || !data.ok) {
+        faltan.innerHTML = '<span class="chip-falta">Error: ' + (data.resumen || data.mensaje || r.status) + "</span>";
+        return;
+      }
+      if (data.requiere_validacion_humana) aviso.style.display = "block";
+      (data.bloqueos_detectados || []).forEach(b => {
+        const c = document.createElement("span"); c.className = "chip-falta"; c.textContent = "falta: " + b; faltan.appendChild(c);
+      });
+      const dd = data.datos_detectados || {};
+      Object.entries(NOMBRES_BLOQUE).forEach(([clave, titulo]) => {
+        const obj = dd[clave]; if (!obj) return;
+        const caja = document.createElement("div"); caja.className = "bloque";
+        caja.innerHTML = "<h3>" + titulo + "</h3>";
+        Object.entries(obj).forEach(([k, v]) => {
+          const f = document.createElement("div"); f.className = "campo";
+          const vacio = v === "" || v === null;
+          f.innerHTML = '<span class="k">' + k.replaceAll("_", " ") + '</span><span class="v' + (vacio ? " vacio" : "") + '">' + (vacio ? "—" : String(v)) + "</span>";
+          caja.appendChild(f);
+        });
+        cajas.appendChild(caja);
+      });
+      const pon = dd.ponentes || [];
+      const cajaP = document.createElement("div"); cajaP.className = "bloque";
+      cajaP.innerHTML = "<h3>Ponentes</h3>" + (pon.length ? "" : '<div class="campo"><span class="v vacio">— ninguno detectado en el briefing —</span></div>');
+      pon.forEach(p => { const f = document.createElement("div"); f.className = "campo"; f.innerHTML = '<span class="v">' + (p.nombre_ponente || JSON.stringify(p)) + "</span>"; cajaP.appendChild(f); });
+      cajas.appendChild(cajaP);
+    } catch {
+      estado.hidden = true;
+      faltan.innerHTML = '<span class="chip-falta">No llego a Operis (:5002). ¿Está arrancado su servidor.py?</span>';
+    }
+  });
+</script>
+</body>
+</html>

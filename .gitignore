@@ -1,0 +1,15 @@
+# macOS
+.DS_Store
+
+# Temporales de Office (archivos abiertos)
+~$*
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Secretos y salidas locales
+.env
+*.log
