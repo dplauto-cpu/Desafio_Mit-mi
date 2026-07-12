@@ -1,0 +1,304 @@
+@use '../../styles/variables' as *;
+
+.agente-page {
+  max-width: $bp-1200;
+  margin: 0 auto;
+  padding: $sp-32 $sp-20 $sp-64;
+  font-family: $font-secondary;
+  color: $color-text;
+}
+
+.agente-cabecera {
+  margin-bottom: $sp-24;
+
+  h1 {
+    font-family: $font-primary;
+    font-weight: $fw-bold;
+    font-size: $txt-xxl;
+    line-height: $lh-titulo;
+    margin: 0 0 $sp-4;
+  }
+
+  p {
+    color: $color-text-muted;
+    margin: 0;
+  }
+}
+
+.agente-servicios {
+  display: flex;
+  gap: $sp-8;
+  margin-top: $sp-12;
+
+  .servicio {
+    font-size: $txt-sm;
+    font-weight: $fw-semibold;
+    color: $color-text-muted;
+    border: 1px solid $color-border;
+    border-radius: 999px;
+    padding: $sp-4 $sp-12;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+
+    &::before {
+      content: '';
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: $color-black-25;
+    }
+
+    &.on::before { background: $color-dot; }
+    &.off::before { background: $color-error; }
+  }
+}
+
+.agente-columnas {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: $sp-16;
+
+  @media (max-width: $bp-1024) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.agente-tarjeta {
+  background: $color-bg;
+  border: 1px solid $color-border;
+  border-radius: $radius-lg;
+  padding: $sp-20;
+  min-width: 0;
+
+  h2 {
+    font-family: $font-primary;
+    font-size: $txt-lg;
+    font-weight: $fw-semibold;
+    margin: 0 0 $sp-12;
+  }
+}
+
+/* ───────── chat Lumen ───────── */
+.chat-hilo {
+  display: flex;
+  flex-direction: column;
+  gap: $sp-8;
+  min-height: 240px;
+  max-height: 400px;
+  overflow-y: auto;
+  padding: $sp-4 2px;
+}
+
+.chat-msg {
+  max-width: 82%;
+  padding: $sp-8 $sp-12;
+  border-radius: $radius-lg;
+  font-size: $txt-base;
+  line-height: $lh-normal;
+  white-space: pre-wrap;
+
+  &.yo {
+    align-self: flex-end;
+    background: $color-primary;
+    color: $color-white;
+    border-bottom-right-radius: $radius-sm;
+  }
+
+  &.agente {
+    align-self: flex-start;
+    background: $color-black-5;
+    border-bottom-left-radius: $radius-sm;
+  }
+
+  &.sistema {
+    align-self: center;
+    background: none;
+    color: $color-text-muted;
+    font-size: $txt-xs;
+    text-align: center;
+    padding: 2px;
+  }
+
+  .chat-meta {
+    display: block;
+    font-size: $txt-xs;
+    opacity: 0.7;
+    margin-top: $sp-4;
+  }
+}
+
+.chat-sugerencias {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $sp-8;
+  margin-top: $sp-12;
+
+  button {
+    font-family: $font-secondary;
+    font-size: $txt-sm;
+    color: $color-primary;
+    background: none;
+    border: 1px solid $color-border;
+    border-radius: $radius-md;
+    padding: $sp-4 $sp-12;
+    cursor: pointer;
+
+    &:hover { border-color: $color-primary; }
+    &.reset { color: $color-text-muted; }
+  }
+}
+
+.chat-entrada {
+  display: flex;
+  gap: $sp-8;
+  margin-top: $sp-12;
+
+  input {
+    flex: 1;
+    font-family: $font-secondary;
+    font-size: $txt-base;
+    border: 1px solid $color-border;
+    border-radius: $radius-md;
+    padding: $sp-8 $sp-12;
+
+    &:focus {
+      outline: 2px solid $color-primary;
+      outline-offset: -1px;
+    }
+  }
+
+  button {
+    font-family: $font-secondary;
+    font-weight: $fw-semibold;
+    font-size: $txt-base;
+    color: $color-white;
+    background: $color-primary;
+    border: none;
+    border-radius: $radius-md;
+    padding: $sp-8 $sp-20;
+    cursor: pointer;
+
+    &:disabled { opacity: 0.5; cursor: default; }
+  }
+}
+
+/* ───────── Operis ───────── */
+.operis-etiqueta {
+  display: block;
+  font-size: $txt-sm;
+  color: $color-text-muted;
+  margin-bottom: $sp-8;
+}
+
+.agente-tarjeta textarea {
+  width: 100%;
+  box-sizing: border-box;
+  font-family: $font-secondary;
+  font-size: $txt-base;
+  line-height: $lh-normal;
+  border: 1px solid $color-border;
+  border-radius: $radius-md;
+  padding: $sp-8 $sp-12;
+  resize: vertical;
+
+  &:focus {
+    outline: 2px solid $color-primary;
+    outline-offset: -1px;
+  }
+}
+
+.operis-acciones {
+  margin-top: $sp-12;
+
+  button {
+    font-family: $font-secondary;
+    font-weight: $fw-semibold;
+    font-size: $txt-base;
+    color: $color-white;
+    background: $color-primary;
+    border: none;
+    border-radius: $radius-md;
+    padding: $sp-8 $sp-20;
+    cursor: pointer;
+
+    &:disabled { opacity: 0.5; cursor: default; }
+  }
+}
+
+.operis-error {
+  color: $color-error;
+  font-size: $txt-sm;
+  margin-top: $sp-12;
+}
+
+.operis-aviso {
+  background: #fdf3dd;
+  color: #8a5d00;
+  font-size: $txt-sm;
+  font-weight: $fw-semibold;
+  border-radius: $radius-md;
+  padding: $sp-8 $sp-12;
+  margin: $sp-16 0 0;
+}
+
+.operis-faltan {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $sp-8;
+  margin-top: $sp-12;
+
+  span {
+    font-size: $txt-xs;
+    font-weight: $fw-semibold;
+    color: #8a5d00;
+    background: #fdf3dd;
+    border-radius: 999px;
+    padding: 3px $sp-12;
+  }
+}
+
+.operis-bloques {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: $sp-12;
+  margin-top: $sp-12;
+}
+
+.operis-bloque {
+  border: 1px solid $color-black-10;
+  border-radius: $radius-md;
+  padding: $sp-12 $sp-16;
+
+  h3 {
+    font-family: $font-primary;
+    font-size: $txt-xs;
+    font-weight: $fw-bold;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: $color-text-muted;
+    margin: 0 0 $sp-8;
+  }
+}
+
+.operis-campo {
+  display: flex;
+  justify-content: space-between;
+  gap: $sp-12;
+  font-size: $txt-sm;
+  padding: 2px 0;
+
+  .k { color: $color-text-muted; flex: none; }
+
+  .v {
+    font-weight: $fw-semibold;
+    text-align: right;
+    overflow-wrap: anywhere;
+
+    &.vacio {
+      color: $color-black-40;
+      font-weight: $fw-regular;
+      font-style: italic;
+    }
+  }
+}
