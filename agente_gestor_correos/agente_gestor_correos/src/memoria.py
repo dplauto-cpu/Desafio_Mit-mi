@@ -1,33 +1,193 @@
+"""Memoria SQLite mínima del agente."""
+
 import json
 import sqlite3
 from datetime import datetime
-from pathlib import Path
-from .parametros import BASE_DIR
 
-DB_PATH = BASE_DIR / "data" / "gestor_correos_mitumi.db"
+from src.parametros import DATABASE_PATH
+
+
+ESTADO_PENDIENTE_LECTURA = "pendiente_marcar_leido"
+
+
+def conectar():
+    """Abre la base de datos local."""
+
+    DATABASE_PATH.parent.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+
+    return sqlite3.connect(
+        DATABASE_PATH
+    )
+
 
 def inicializar_memoria():
-    DB_PATH.parent.mkdir(parents=True, exist_ok=True)
-    con = sqlite3.connect(DB_PATH)
-    cur = con.cursor()
-    cur.execute("""
-    CREATE TABLE IF NOT EXISTS ejecuciones (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        timestamp TEXT,
-        email_id TEXT,
-        asunto TEXT,
-        categoria TEXT,
-        ok INTEGER,
-        respuesta_json TEXT
-    )
-    """)
-    con.commit(); con.close()
+    """Crea la tabla necesaria sin borrar datos."""
 
-def guardar_respuesta(email_id: str, asunto: str, categoria: str, ok: bool, respuesta: dict):
-    inicializar_memoria()
-    con = sqlite3.connect(DB_PATH)
-    con.execute(
-        "INSERT INTO ejecuciones(timestamp,email_id,asunto,categoria,ok,respuesta_json) VALUES(?,?,?,?,?,?)",
-        (datetime.now().isoformat(timespec="seconds"), email_id, asunto, categoria, 1 if ok else 0, json.dumps(respuesta, ensure_ascii=False))
+    conexion = conectar()
+
+    conexion.execute(
+        """
+        CREATE TABLE IF NOT EXISTS correos (
+            message_id TEXT PRIMARY KEY,
+            fecha_proceso TEXT NOT NULL,
+            categoria TEXT NOT NULL,
+            confianza REAL,
+            accion TEXT,
+            estado_gmail TEXT,
+            draft_id TEXT,
+            requiere_revision INTEGER,
+            error TEXT,
+            resultado TEXT
+        )
+        """
     )
-    con.commit(); con.close()
+
+    conexion.commit()
+    conexion.close()
+
+
+def obtener_ids_procesados():
+    """Devuelve correos que no necesitan reintento."""
+
+    inicializar_memoria()
+    conexion = conectar()
+
+    filas = conexion.execute(
+        """
+        SELECT message_id
+        FROM correos
+        WHERE estado_gmail != ?
+        """,
+        (
+            ESTADO_PENDIENTE_LECTURA,
+        ),
+    ).fetchall()
+
+    conexion.close()
+
+    return [
+        fila[0]
+        for fila in filas
+    ]
+
+
+def obtener_registro_correo(
+    message_id,
+):
+    """Recupera el registro guardado de un correo."""
+
+    inicializar_memoria()
+    conexion = conectar()
+
+    fila = conexion.execute(
+        """
+        SELECT categoria, confianza, accion, estado_gmail,
+               draft_id, requiere_revision, error, resultado
+        FROM correos
+        WHERE message_id = ?
+        """,
+        (
+            message_id,
+        ),
+    ).fetchone()
+
+    conexion.close()
+
+    if not fila:
+        return None
+
+    try:
+        resultado = json.loads(
+            fila[7]
+            or "{}"
+        )
+    except json.JSONDecodeError:
+        resultado = {}
+
+    return {
+        "categoria": fila[0],
+        "confianza": fila[1],
+        "accion": fila[2],
+        "estado_gmail": fila[3],
+        "draft_id": fila[4],
+        "requiere_revision": bool(
+            fila[5]
+        ),
+        "error": fila[6],
+        "resultado": resultado,
+    }
+
+
+def registrar_correo(
+    message_id,
+    categoria,
+    confianza,
+    accion,
+    estado_gmail,
+    draft_id="",
+    requiere_revision=False,
+    error="",
+    resultado=None,
+):
+    """Guarda el resultado final o parcial de un correo."""
+
+    inicializar_memoria()
+    conexion = conectar()
+
+    conexion.execute(
+        """
+        INSERT OR REPLACE INTO correos (
+            message_id,
+            fecha_proceso,
+            categoria,
+            confianza,
+            accion,
+            estado_gmail,
+            draft_id,
+            requiere_revision,
+            error,
+            resultado
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        (
+            message_id,
+            datetime.now().isoformat(
+                timespec="seconds",
+            ),
+            categoria,
+            confianza,
+            accion,
+            estado_gmail,
+            draft_id,
+            int(
+                bool(
+                    requiere_revision
+                )
+            ),
+            error,
+            json.dumps(
+                resultado or {},
+                ensure_ascii=False,
+                default=str,
+            ),
+        ),
+    )
+
+    conexion.commit()
+    conexion.close()
+
+    return {
+        "ok": True,
+        "message_id": message_id,
+        "categoria": categoria,
+        "accion": accion,
+        "estado_gmail": estado_gmail,
+        "draft_id": draft_id,
+        "requiere_revision": bool(
+            requiere_revision
+        ),
+    }

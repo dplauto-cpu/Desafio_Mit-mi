@@ -1,12 +1,25 @@
-from pathlib import Path
-from .parametros import BASE_DIR
+"""Carga los prompts editables del proyecto."""
 
-def cargar_prompt(nombre_archivo: str) -> str:
-    ruta = BASE_DIR / "prompts" / nombre_archivo
-    if not ruta.exists():
-        return ""
-    return ruta.read_text(encoding="utf-8")
+from src.parametros import PROMPTS_DIR
 
-PROMPT_CLASIFICACION = cargar_prompt("prompt_clasificacion.txt")
-PROMPT_REDACCION = cargar_prompt("prompt_redaccion.txt")
-REGLAS_COMUNES = cargar_prompt("reglas_comunes.txt")
+
+ARCHIVOS_PROMPT = {
+    "reglas": "reglas_comunes.txt",
+    "clasificacion": "prompt_clasificacion.txt",
+    "redaccion": "prompt_redaccion.txt",
+}
+
+
+def cargar_prompts():
+    """Lee todos los prompts desde archivos separados."""
+
+    prompts = {}
+
+    for nombre, archivo in ARCHIVOS_PROMPT.items():
+        ruta = PROMPTS_DIR / archivo
+
+        prompts[nombre] = ruta.read_text(
+            encoding="utf-8",
+        )
+
+    return prompts

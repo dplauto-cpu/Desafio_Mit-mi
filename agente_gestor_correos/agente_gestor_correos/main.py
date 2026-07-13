@@ -1,30 +1,36 @@
+"""Ejecuta un ciclo completo del agente gestor de correos MITUMI."""
+
 import json
-from src import parametros as p
-from src.agente import procesar_bandeja_gmail, ejecutar_agente
 
-print("AGENTE_VERSION=", p.AGENTE_VERSION)
+from src.agente import ejecutar_agente
+from src.funciones import funciones
+from src.memoria import inicializar_memoria
+from src.prompts import cargar_prompts
+from src.tools import tools
 
-if p.GMAIL_ENABLED and p.COMPOSIO_ENABLED:
-    resultado = procesar_bandeja_gmail()
-    print("RESUMEN_LOTE")
-    print(json.dumps(resultado["resumen_lote"], ensure_ascii=False, indent=2))
-    print("ARCHIVOS_GENERADOS_EN= outputs/respuestas_json/")
-else:
-    demo = {
-        "id_evento": None,
-        "id_registro": "demo-001",
-        "tipo_peticion": "analizar_correo",
-        "origen": "demo",
-        "usuario_solicitante": "sistema",
-        "rol_usuario": "sistema",
-        "datos": {
-            "email_id": "demo-001",
-            "remitente": "ponente@empresa.com",
-            "asunto": "Envío de fichas de ponentes",
-            "cuerpo": "Adjunto las fichas y biografías de los ponentes del evento.",
-            "adjuntos": [{"nombre": "fichas_ponentes.pdf", "mime_type": "application/pdf", "size_bytes": 120000}],
-        },
-        "contexto": {},
-        "modo": "propuesta",
-    }
-    print(json.dumps(ejecutar_agente(demo), ensure_ascii=False, indent=2))
+
+def ejecutar_ciclo():
+    """Prepara memoria, prompts, tools y funciones."""
+
+    inicializar_memoria()
+    prompts = cargar_prompts()
+
+    return ejecutar_agente(
+        tools=tools,
+        funciones=funciones,
+        prompts=prompts,
+    )
+
+
+if __name__ == "__main__":
+    resultado = ejecutar_ciclo()
+
+    print("\n===== RESULTADO DEL CICLO =====")
+    print(
+        json.dumps(
+            resultado,
+            ensure_ascii=False,
+            indent=2,
+            default=str,
+        )
+    )

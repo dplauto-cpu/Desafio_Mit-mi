@@ -1,216 +1,581 @@
-import hashlib
-import re
-from html import unescape
-from .llm import clasificar_con_llm, LLMError
+"""Funciones de alto nivel y registro del agente."""
 
-CATEGORIAS_PERMITIDAS = {
-    "nuevo_evento_lead", "cliente_briefing", "cliente_cambio_fecha", "cliente_cambio_aforo",
-    "cliente_aprobacion", "cliente_duda", "cliente_cancelacion", "cliente_queja",
-    "ponente_confirmacion", "ponente_informacion_general", "ponente_documentacion_cv",
-    "ponente_documentacion_foto", "ponente_presentacion", "ponente_actualizacion_presentacion",
-    "ponente_duda_hotel", "ponente_duda_viaje", "ponente_necesidad_tecnica",
-    "ponente_restriccion_alimentaria", "ponente_cancelacion",
-    "espacio_disponibilidad", "espacio_presupuesto", "proveedor_presupuesto",
-    "proveedor_confirmacion", "proveedor_incidencia", "contrato", "albaran",
-    "factura_cliente", "factura_proveedor", "factura_ponente", "justificante_pago",
-    "recordatorio_pago", "documento_fiscal", "publicidad", "newsletter", "spam",
-    "phishing_sospechoso", "rebote_email", "fuera_oficina", "respuesta_automatica",
-    "duplicado", "no_relacionado", "no_clasificado"
+import json
+from pathlib import Path
+
+from src.gmail import (
+    crear_borrador,
+    marcar_como_leido,
+    obtener_correos_no_leidos,
+)
+from src.llm import preguntar_json
+from src.memoria import (
+    obtener_registro_correo,
+    registrar_correo,
+)
+from src.parametros import (
+    CLASSIFICATION_MIN_CONFIDENCE,
+)
+
+
+CATEGORIAS = {
+    "nuevo_evento_lead",
+    "cliente_briefing",
+    "cliente_cambio_fecha",
+    "cliente_cambio_aforo",
+    "cliente_aprobacion",
+    "cliente_duda",
+    "cliente_cancelacion",
+    "cliente_queja",
+    "ponente_informacion_general",
+    "ponente_confirmacion",
+    "ponente_documentacion_cv",
+    "ponente_documentacion_foto",
+    "ponente_presentacion",
+    "ponente_actualizacion_presentacion",
+    "ponente_duda_viaje",
+    "ponente_duda_hotel",
+    "ponente_necesidad_tecnica",
+    "ponente_restriccion_alimentaria",
+    "ponente_cancelacion",
+    "espacio_disponibilidad",
+    "espacio_presupuesto",
+    "espacio_condiciones",
+    "proveedor_presupuesto",
+    "proveedor_confirmacion",
+    "proveedor_incidencia",
+    "proveedor_cambio",
+    "factura_cliente",
+    "factura_proveedor",
+    "factura_ponente",
+    "documento_fiscal",
+    "justificante_pago",
+    "publicidad",
+    "newsletter",
+    "spam",
+    "phishing_sospechoso",
+    "respuesta_automatica",
+    "fuera_oficina",
+    "rebote_email",
+    "duplicado",
+    "no_relacionado",
+    "no_clasificado",
 }
 
-ALIAS_CATEGORIAS = {
-    "consulta_logistica_ponente": "ponente_duda_viaje",
-    "ponente_logistica": "ponente_duda_viaje",
-    "documentacion_vuelo": "ponente_duda_viaje",
-    "duda_vuelo": "ponente_duda_viaje",
-    "duda_hotel": "ponente_duda_hotel",
-    "alojamiento_ponente": "ponente_duda_hotel",
-    "fichas_ponentes": "ponente_documentacion_cv",
-    "datos_ponentes": "ponente_documentacion_cv",
-    "biografia_ponente": "ponente_documentacion_cv",
-    "cv_ponente": "ponente_documentacion_cv",
-    "presupuesto_evento": "nuevo_evento_lead",
-    "solicitud_presupuesto": "nuevo_evento_lead",
-    "lead_evento": "nuevo_evento_lead",
-    "factura": "factura_proveedor",
-    "correo_publicitario": "publicidad",
-    "confirmacion_reservas": "ponente_confirmacion",
-    "confirmacion_reserva": "ponente_confirmacion",
-    "reserva_confirmada": "ponente_confirmacion",
-    "logistica_ponente": "ponente_duda_viaje",
-    "consulta_vuelo": "ponente_duda_viaje",
-    "documentacion_de_vuelo": "ponente_duda_viaje",
-    "consulta_documentacion_vuelo": "ponente_duda_viaje",
+
+ETIQUETAS = {
+    "nuevo_evento_lead": "MITUMI/Nuevos eventos",
+    "cliente_briefing": "MITUMI/Clientes",
+    "cliente_cambio_fecha": "MITUMI/Clientes/Cambios",
+    "cliente_cambio_aforo": "MITUMI/Clientes/Cambios",
+    "cliente_aprobacion": "MITUMI/Clientes/Aprobaciones",
+    "cliente_duda": "MITUMI/Clientes/Consultas",
+    "cliente_cancelacion": "MITUMI/Urgente",
+    "cliente_queja": "MITUMI/Urgente",
+    "ponente_informacion_general": "MITUMI/Ponentes",
+    "ponente_confirmacion": "MITUMI/Ponentes/Confirmaciones",
+    "ponente_documentacion_cv": "MITUMI/Ponentes/Documentacion",
+    "ponente_documentacion_foto": "MITUMI/Ponentes/Documentacion",
+    "ponente_presentacion": "MITUMI/Ponentes/Presentaciones",
+    "ponente_actualizacion_presentacion": "MITUMI/Ponentes/Presentaciones",
+    "ponente_duda_viaje": "MITUMI/Ponentes/Viajes",
+    "ponente_duda_hotel": "MITUMI/Ponentes/Hoteles",
+    "ponente_necesidad_tecnica": "MITUMI/Ponentes/Necesidades tecnicas",
+    "ponente_restriccion_alimentaria": "MITUMI/Ponentes/Catering",
+    "ponente_cancelacion": "MITUMI/Urgente",
+    "espacio_disponibilidad": "MITUMI/Espacios",
+    "espacio_presupuesto": "MITUMI/Espacios/Presupuestos",
+    "espacio_condiciones": "MITUMI/Espacios/Condiciones",
+    "proveedor_presupuesto": "MITUMI/Proveedores/Presupuestos",
+    "proveedor_confirmacion": "MITUMI/Proveedores/Confirmaciones",
+    "proveedor_incidencia": "MITUMI/Urgente",
+    "proveedor_cambio": "MITUMI/Proveedores/Cambios",
+    "factura_cliente": "MITUMI/Facturacion",
+    "factura_proveedor": "MITUMI/Facturacion",
+    "factura_ponente": "MITUMI/Facturacion",
+    "documento_fiscal": "MITUMI/Facturacion",
+    "justificante_pago": "MITUMI/Facturacion",
+    "publicidad": "MITUMI/Publicidad",
+    "newsletter": "MITUMI/Publicidad",
+    "spam": "MITUMI/Spam sospechoso",
+    "phishing_sospechoso": "MITUMI/Spam sospechoso",
+    "respuesta_automatica": "MITUMI/Automaticos",
+    "fuera_oficina": "MITUMI/Automaticos",
+    "rebote_email": "MITUMI/Rebotes",
+    "duplicado": "MITUMI/Duplicados",
+    "no_relacionado": "MITUMI/No relacionado",
+    "no_clasificado": "MITUMI/No clasificado",
 }
 
-def limpiar_html(texto: str) -> str:
-    if not texto:
-        return ""
-    texto = unescape(texto)
-    texto = re.sub(r"<br\s*/?>", "\n", texto, flags=re.IGNORECASE)
-    texto = re.sub(r"<[^>]+>", " ", texto)
-    return " ".join(texto.split())
 
-def apoyo_reglas(correo: dict) -> dict:
-    texto = f"{correo.get('asunto','')} {correo.get('cuerpo','')}".lower()
-    candidatos = []
-    def add(cat, palabra):
-        if palabra in texto:
-            candidatos.append({"categoria": cat, "motivo": palabra})
-    for palabra in ["ponente", "ponentes", "ficha", "fichas", "biografia", "cv"]:
-        add("ponente_documentacion_cv" if palabra in ["ficha", "fichas", "biografia", "cv"] else "ponente_informacion_general", palabra)
-    for palabra in ["vuelo", "billete", "tren", "taxi", "traslado", "aeropuerto"]:
-        add("ponente_duda_viaje", palabra)
-    for palabra in ["reserva", "reservas", "confirmación", "confirmacion", "servicio de traslado"]:
-        add("ponente_confirmacion", palabra)
-    for palabra in ["hotel", "alojamiento", "habitación", "habitacion"]:
-        add("ponente_duda_hotel", palabra)
-    for palabra in ["presupuesto", "propuesta", "organizar", "evento", "jornada"]:
-        add("nuevo_evento_lead", palabra)
-    for palabra in ["factura", "iva", "base imponible"]:
-        add("factura_proveedor", palabra)
-    for palabra in ["newsletter", "unsubscribe", "oferta"]:
-        add("newsletter", palabra)
-    return {"candidatos": candidatos[:5], "hay_adjuntos": bool(correo.get("adjuntos"))}
+CATEGORIAS_SIN_BORRADOR = {
+    "publicidad",
+    "newsletter",
+    "spam",
+    "phishing_sospechoso",
+    "respuesta_automatica",
+    "fuera_oficina",
+    "rebote_email",
+    "duplicado",
+    "no_relacionado",
+    "no_clasificado",
+}
 
-def normalizar_categoria(categoria: str) -> str:
-    cat = (categoria or "no_clasificado").strip().lower()
-    cat = cat.replace(" ", "_").replace("-", "_")
-    cat = ALIAS_CATEGORIAS.get(cat, cat)
-    if cat not in CATEGORIAS_PERMITIDAS:
-        return "no_clasificado"
-    return cat
 
-def clasificar_correo(correo: dict) -> dict:
-    apoyo = apoyo_reglas(correo)
+DOCUMENTOS_CRITICOS = {
+    "factura",
+    "contrato",
+    "documento_fiscal",
+    "documento_no_clasificado",
+    "pdf_pendiente_clasificacion",
+}
+
+
+def convertir_confianza(valor):
+    """Convierte una confianza a número entre 0 y 1."""
+
     try:
-        data = clasificar_con_llm(correo, apoyo)
-    except LLMError as e:
+        confianza = float(valor)
+    except (TypeError, ValueError):
+        return 0.0
+
+    return max(0.0, min(confianza, 1.0))
+
+
+def convertir_booleano(valor):
+    """Convierte valores habituales del LLM a booleano."""
+
+    if isinstance(valor, bool):
+        return valor
+
+    return str(valor).strip().lower() in {
+        "true",
+        "1",
+        "si",
+        "sí",
+        "yes",
+    }
+
+
+def clasificar_correo(correo, prompts):
+    """Clasifica semánticamente un correo con LLM obligatorio."""
+
+    prompt = (
+        prompts["reglas"]
+        + "\n\n"
+        + prompts["clasificacion"]
+    )
+
+    contenido = json.dumps(
+        {
+            "remitente": correo.get("remitente", ""),
+            "asunto": correo.get("asunto", ""),
+            "cuerpo": correo.get("cuerpo", ""),
+            "adjuntos": correo.get("adjuntos", []),
+        },
+        ensure_ascii=False,
+    )
+
+    try:
+        datos = preguntar_json(
+            prompt,
+            contenido,
+        )
+    except Exception as error:
         return {
             "ok": False,
-            "categoria": "error_llm_obligatorio",
-            "confianza": 0.0,
-            "prioridad": "alta",
-            "riesgo": "alto",
-            "motivo": str(e),
-            "requiere_respuesta": False,
-            "requiere_accion_front": True,
-            "datos_extraidos": {},
-            "metodo_clasificacion": "llm_obligatorio_error",
-            "error": str(e),
+            "error": str(error),
         }
-    cat_original = (data.get("categoria") or "").strip().lower()
-    cat = normalizar_categoria(cat_original)
-    try:
-        confianza = float(data.get("confianza", 0.0))
-    except Exception:
-        confianza = 0.0
 
-    metodo = "llm_obligatorio_con_apoyo_reglas"
-    motivo = data.get("motivo", "Clasificación LLM.")
+    if not isinstance(datos, dict):
+        return {
+            "ok": False,
+            "error": "El LLM no devolvió JSON válido.",
+        }
 
-    # Si el LLM funciona pero responde no_clasificado con confianza alta,
-    # se admite una corrección por reglas de apoyo, no como fallback autónomo.
-    candidatos_apoyo = apoyo.get("candidatos", [])
-    if cat == "no_clasificado" and confianza >= 0.80 and candidatos_apoyo:
-        cat = normalizar_categoria(candidatos_apoyo[0].get("categoria"))
-        confianza = min(confianza, 0.82)
-        metodo = "llm_obligatorio_corregido_por_apoyo_reglas"
-        motivo = f"LLM ejecutado, pero la categoría se normaliza con apoyo de reglas: {candidatos_apoyo[0].get('motivo')}"
+    categoria = (
+        datos.get("categoria")
+        or datos.get("clasificacion")
+        or ""
+    ).strip().lower()
+    confianza = convertir_confianza(
+        datos.get("confianza")
+    )
 
-    if confianza < 0.80:
-        cat = "no_clasificado"
+    if categoria not in CATEGORIAS:
+        categoria = "no_clasificado"
 
-    # Un no_clasificado no debe salir con confianza 1.0, aunque el LLM lo devuelva así.
-    if cat == "no_clasificado" and confianza >= 0.80:
-        confianza = 0.79
-        metodo = "llm_obligatorio_no_clasificado_normalizado"
+    if confianza < CLASSIFICATION_MIN_CONFIDENCE:
+        categoria = "no_clasificado"
+
+    prioridad = str(
+        datos.get("prioridad")
+        or "media"
+    ).strip().lower()
+
+    if prioridad not in {"baja", "media", "alta"}:
+        prioridad = "media"
+
+    riesgo = str(
+        datos.get("riesgo")
+        or "medio"
+    ).strip().lower()
+
+    if riesgo not in {"bajo", "medio", "alto"}:
+        riesgo = "medio"
+
+    evento = datos.get("evento_detectado")
+
+    if not isinstance(evento, str) or not evento.strip():
+        evento = None
+
+    requiere_asociacion = datos.get(
+        "requiere_asociacion_evento"
+    )
+
+    if evento is None:
+        requiere_asociacion = True
+    else:
+        requiere_asociacion = convertir_booleano(
+            requiere_asociacion
+        )
+
+    extraidos = datos.get("datos_extraidos")
+
+    if not isinstance(extraidos, dict):
+        extraidos = {}
 
     return {
         "ok": True,
-        "categoria": cat,
+        "categoria": categoria,
         "confianza": confianza,
-        "prioridad": data.get("prioridad", "media"),
-        "riesgo": data.get("riesgo", "medio"),
-        "motivo": motivo,
-        "requiere_respuesta": bool(data.get("requiere_respuesta", False)),
-        "requiere_accion_front": bool(data.get("requiere_accion_front", True)),
-        "datos_extraidos": data.get("datos_extraidos", {}) or {},
-        "metodo_clasificacion": metodo,
+        "prioridad": prioridad,
+        "riesgo": riesgo,
+        "requiere_respuesta": convertir_booleano(
+            datos.get("requiere_respuesta")
+        ),
+        "motivo": str(
+            datos.get("motivo")
+            or "Clasificación sin motivo."
+        ).strip(),
+        "evento_detectado": evento,
+        "requiere_asociacion_evento": requiere_asociacion,
+        "datos_extraidos": extraidos,
     }
 
-def detectar_documentos(correo: dict, categoria: str) -> list:
-    docs = []
-    for adj in correo.get("adjuntos", []) or []:
-        nombre = adj.get("nombre") or adj.get("filename") or "adjunto_sin_nombre"
-        mime = adj.get("mime_type") or adj.get("mimeType") or ""
-        base = f"{correo.get('email_id','')}|{nombre}|{adj.get('size_bytes',0)}"
-        h = hashlib.sha256(base.encode("utf-8")).hexdigest()[:16]
-        lower = nombre.lower()
-        if categoria.startswith("factura") or "factura" in lower:
-            tipo = "factura"
-        elif lower.endswith((".ppt", ".pptx", ".pdf")) and "present" in lower:
-            tipo = "presentacion"
-        elif "cv" in lower or "bio" in lower or "ficha" in lower:
-            tipo = "ficha_ponente"
-        elif lower.endswith((".jpg", ".jpeg", ".png")):
-            tipo = "foto"
-        elif lower.endswith(".pdf"):
-            tipo = "pdf_pendiente_clasificacion"
-        else:
-            tipo = "documento_pendiente_clasificacion"
-        docs.append({
-            "documento_id_temporal": f"doc_tmp_{h}",
-            "email_id": correo.get("email_id"),
-            "nombre_archivo": nombre,
-            "mime_type": mime,
-            "size_bytes": adj.get("size_bytes", 0),
-            "tipo_documento_detectado": tipo,
-            "categoria_correo": categoria,
-            "estado_documental": "pendiente_revision_humana",
-            "requiere_validacion_humana": True,
-            "hash_control": h,
-        })
-    return docs
 
-def construir_acciones(correo: dict, clasif: dict, documentos: list, email_facturacion_destino: str = "") -> list:
-    cat = clasif["categoria"]
-    email_id = correo.get("email_id")
-    acciones = []
+def redactar_borrador(correo, clasificacion, prompts):
+    """Redacta un borrador con LLM obligatorio."""
+
+    prompt = (
+        prompts["reglas"]
+        + "\n\n"
+        + prompts["redaccion"]
+    )
+
+    contenido = json.dumps(
+        {
+            "correo": {
+                "remitente": correo.get("remitente", ""),
+                "asunto": correo.get("asunto", ""),
+                "cuerpo": correo.get("cuerpo", ""),
+                "adjuntos": correo.get("adjuntos", []),
+            },
+            "clasificacion": clasificacion,
+        },
+        ensure_ascii=False,
+    )
+
+    try:
+        datos = preguntar_json(
+            prompt,
+            contenido,
+        )
+    except Exception as error:
+        return {
+            "ok": False,
+            "error": str(error),
+        }
+
+    if not isinstance(datos, dict):
+        return {
+            "ok": False,
+            "error": "El LLM no devolvió JSON válido para el borrador.",
+        }
+
+    cuerpo = str(
+        datos.get("cuerpo")
+        or ""
+    ).strip()
+
+    if not cuerpo:
+        return {
+            "ok": False,
+            "error": "El LLM devolvió un borrador vacío.",
+        }
+
+    asunto_original = correo.get("asunto", "")
+    asunto = asunto_original
+
+    if not asunto.lower().startswith("re:"):
+        asunto = "Re: " + asunto
+
+    return {
+        "ok": True,
+        "asunto": asunto,
+        "asunto_sugerido_llm": datos.get(
+            "asunto_sugerido"
+        ),
+        "cuerpo": cuerpo,
+    }
+
+
+def tipo_documento(nombre, categoria):
+    """Clasifica un adjunto por su nombre y contexto."""
+
+    texto = (nombre or "").lower()
+    extension = Path(texto).suffix
+
+    if "cv" in texto or "curriculum" in texto or "biografia" in texto:
+        return "cv_ponente"
+
+    if "foto" in texto or extension in {".jpg", ".jpeg", ".png", ".webp"}:
+        return "foto_ponente"
+
+    if (
+        "presentacion" in texto
+        or "ponencia" in texto
+        or extension in {".ppt", ".pptx"}
+    ):
+        return "presentacion_ponente"
+
+    if "factura" in texto or categoria.startswith("factura_"):
+        return "factura"
+
+    if "presupuesto" in texto or "oferta" in texto:
+        return "presupuesto"
+
+    if "contrato" in texto:
+        return "contrato"
+
+    if "billete" in texto or "vuelo" in texto or "tren" in texto:
+        return "billete_vuelo"
+
+    if "hotel" in texto or "alojamiento" in texto or "reserva" in texto:
+        return "reserva_hotel"
+
+    if "fiscal" in texto or "cif" in texto or "nif" in texto:
+        return "documento_fiscal"
+
+    if "ficha" in texto:
+        return "ficha_ponente"
+
+    if categoria == "ponente_documentacion_cv":
+        return "cv_ponente"
+
+    if categoria == "ponente_documentacion_foto":
+        return "foto_ponente"
+
+    if categoria in {
+        "ponente_presentacion",
+        "ponente_actualizacion_presentacion",
+    }:
+        return "presentacion_ponente"
+
+    if extension == ".pdf":
+        return "pdf_pendiente_clasificacion"
+
+    return "documento_no_clasificado"
+
+
+def detectar_documentos(correo, categoria):
+    """Registra los metadatos de todos los adjuntos."""
+
+    documentos = []
+
+    for adjunto in correo.get("adjuntos", []) or []:
+        nombre = (
+            adjunto.get("nombre")
+            or adjunto.get("filename")
+            or "adjunto_sin_nombre"
+        )
+
+        documentos.append(
+            {
+                "nombre_archivo": nombre,
+                "tipo_documento_detectado": tipo_documento(
+                    nombre,
+                    categoria,
+                ),
+                "mime_type": (
+                    adjunto.get("mime_type")
+                    or adjunto.get("mimeType")
+                    or ""
+                ),
+                "size_bytes": (
+                    adjunto.get("size_bytes")
+                    or adjunto.get("size")
+                    or 0
+                ),
+                "estado_documental": "pendiente_revision_humana",
+                "requiere_validacion_humana": True,
+            }
+        )
+
+    return documentos
+
+
+def sugerir_etiquetas(categoria, documentos, riesgo):
+    """Propone etiquetas de Gmail sin aplicarlas."""
+
+    etiquetas = [
+        ETIQUETAS.get(
+            categoria,
+            "MITUMI/No clasificado",
+        )
+    ]
+
     if documentos:
-        acciones.append({
-            "tipo": "registrar_documentos_pendientes",
-            "descripcion": f"Registrar {len(documentos)} adjunto(s) en bandeja documental pendiente de validación.",
-            "prioridad": "alta" if cat == "no_clasificado" else "media",
-            "requiere_validacion_humana": True,
-            "visible_en_front": True,
-            "estado_sugerido": "pendiente_humano",
-            "email_id": email_id,
-            "accion_tecnica": {"registrar_documentos_pendientes": True, "documentos": [d["documento_id_temporal"] for d in documentos]},
-        })
-    if cat == "nuevo_evento_lead":
-        acciones.append({"tipo": "crear_lead_evento_pendiente", "descripcion": "Crear oportunidad comercial pendiente de revisión desde el front.", "prioridad": "media", "requiere_validacion_humana": True, "visible_en_front": True, "estado_sugerido": "pendiente_humano", "email_id": email_id, "accion_tecnica": {}})
-    elif cat.startswith("factura") or cat in {"documento_fiscal", "justificante_pago", "recordatorio_pago"}:
-        if email_facturacion_destino:
-            acciones.append({"tipo": "reenviar_facturacion_pendiente", "descripcion": f"Factura/documento fiscal detectado. Reenvío propuesto a {email_facturacion_destino}.", "prioridad": "alta", "requiere_validacion_humana": True, "visible_en_front": True, "estado_sugerido": "pendiente_humano", "email_id": email_id, "accion_tecnica": {"reenviar": True, "destino": email_facturacion_destino}})
-        else:
-            acciones.append({"tipo": "definir_flujo_facturacion", "descripcion": "Factura detectada, pero no existe correo/procedimiento de facturación configurado. Revisar manualmente.", "prioridad": "alta", "requiere_validacion_humana": True, "visible_en_front": True, "estado_sugerido": "pendiente_humano", "email_id": email_id, "accion_tecnica": {"reenviar": False, "motivo": "EMAIL_FACTURACION_DESTINO vacío"}})
-    elif cat.startswith("ponente"):
-        acciones.append({"tipo": f"revisar_{cat}", "descripcion": "Correo relacionado con ponente. Revisar y vincular al ponente/evento si procede.", "prioridad": clasif.get("prioridad", "media"), "requiere_validacion_humana": True, "visible_en_front": True, "estado_sugerido": "pendiente_humano", "email_id": email_id, "accion_tecnica": {}})
-    elif cat in {"publicidad", "newsletter", "spam", "no_relacionado"}:
-        acciones.append({"tipo": "limpieza_correo_sugerida", "descripcion": f"Correo clasificado como {cat}. Limpieza sugerida según permisos.", "prioridad": "baja", "requiere_validacion_humana": False, "visible_en_front": False, "estado_sugerido": "automatico_si_permitido", "email_id": email_id, "accion_tecnica": {"archivar_o_borrar": True}})
-    elif cat == "no_clasificado":
-        acciones.append({"tipo": "revisar_clasificacion_correo", "descripcion": "Correo no clasificado por confianza insuficiente. Revisar manualmente.", "prioridad": "alta" if documentos else "media", "requiere_validacion_humana": True, "visible_en_front": True, "estado_sugerido": "pendiente_humano", "email_id": email_id, "accion_tecnica": {"marcar_como_leido": False, "borrar": False, "reenviar": False}})
+        etiquetas += [
+            "MITUMI/Documentos",
+            "MITUMI/Pendiente revision humana",
+        ]
+
+    if riesgo == "alto":
+        etiquetas.append("MITUMI/Urgente")
+
+    return list(dict.fromkeys(etiquetas))
+
+
+def requiere_borrador(clasificacion):
+    """Determina si el correo necesita respuesta."""
+
+    categoria = clasificacion.get("categoria")
+
+    if categoria in CATEGORIAS_SIN_BORRADOR:
+        return False
+
+    return bool(
+        clasificacion.get("requiere_respuesta")
+    )
+
+
+def crear_acciones(
+    clasificacion,
+    documentos,
+    necesita_borrador,
+):
+    """Genera acciones propuestas para frontend o revisión."""
+
+    acciones = []
+
+    if clasificacion.get("requiere_asociacion_evento"):
+        acciones.append(
+            {
+                "tipo": "asociar_evento",
+                "estado": "pendiente_humano",
+            }
+        )
+
+    if documentos:
+        acciones.append(
+            {
+                "tipo": "revisar_documentos",
+                "estado": "pendiente_humano",
+                "cantidad": len(documentos),
+            }
+        )
+
+    if necesita_borrador:
+        acciones.append(
+            {
+                "tipo": "crear_borrador",
+                "estado": "pendiente",
+            }
+        )
+
+    if clasificacion.get("riesgo") == "alto":
+        acciones.append(
+            {
+                "tipo": "revision_urgente",
+                "estado": "pendiente_humano",
+            }
+        )
+
+    if clasificacion.get("categoria", "").startswith("factura_"):
+        acciones.append(
+            {
+                "tipo": "revisar_facturacion",
+                "estado": "pendiente_humano",
+            }
+        )
+
+    if not acciones:
+        acciones.append(
+            {
+                "tipo": "registrar_correo",
+                "estado": "propuesto",
+            }
+        )
+
     return acciones
 
-def sugerir_acciones_correo(cat: str, acciones: list, documentos: list) -> dict:
-    hay_front = any(a.get("visible_en_front") for a in acciones)
-    if cat in {"publicidad", "newsletter", "spam", "no_relacionado"}:
-        return {"marcar_como_leido": True, "archivar": cat in {"newsletter", "no_relacionado"}, "borrar": cat in {"publicidad", "spam"}, "reenviar": False, "motivo": "Correo de baja criticidad clasificado."}
-    if cat == "no_clasificado":
-        return {"marcar_como_leido": False, "archivar": False, "borrar": False, "reenviar": False, "motivo": "Correo no clasificado o confianza insuficiente."}
-    if documentos:
-        return {"marcar_como_leido": False, "archivar": False, "borrar": False, "reenviar": False, "motivo": "Correo con adjuntos: no marcar como leído hasta registrar la acción documental pendiente."}
-    if hay_front:
-        return {"marcar_como_leido": False, "archivar": False, "borrar": False, "reenviar": False, "motivo": "Correo clasificado con acción pendiente visible en front."}
-    return {"marcar_como_leido": True, "archivar": False, "borrar": False, "reenviar": False, "motivo": "Correo clasificado sin acción crítica pendiente."}
+
+def puede_marcar_como_leido(
+    clasificacion,
+    documentos,
+    necesita_borrador,
+    borrador_creado,
+    errores,
+):
+    """Aplica las reglas seguras de marcado como leído."""
+
+    categoria = clasificacion.get("categoria")
+
+    if errores:
+        return False
+
+    if clasificacion.get("confianza", 0) < CLASSIFICATION_MIN_CONFIDENCE:
+        return False
+
+    if categoria in {
+        "no_clasificado",
+        "phishing_sospechoso",
+        "cliente_cancelacion",
+        "cliente_queja",
+        "ponente_cancelacion",
+        "proveedor_incidencia",
+    }:
+        return False
+
+    if clasificacion.get("riesgo") == "alto":
+        return False
+
+    if necesita_borrador and not borrador_creado:
+        return False
+
+    tipos = {
+        documento.get("tipo_documento_detectado")
+        for documento in documentos
+    }
+
+    if tipos & DOCUMENTOS_CRITICOS:
+        return False
+
+    return True
+
+
+funciones = {
+    "obtener_correos_no_leidos": obtener_correos_no_leidos,
+    "clasificar_correo": clasificar_correo,
+    "detectar_documentos": detectar_documentos,
+    "sugerir_etiquetas": sugerir_etiquetas,
+    "requiere_borrador": requiere_borrador,
+    "crear_acciones": crear_acciones,
+    "puede_marcar_como_leido": puede_marcar_como_leido,
+    "redactar_borrador": redactar_borrador,
+    "crear_borrador": crear_borrador,
+    "marcar_como_leido": marcar_como_leido,
+    "obtener_registro_correo": obtener_registro_correo,
+    "registrar_correo": registrar_correo,
+}
